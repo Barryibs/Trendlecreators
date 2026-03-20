@@ -56,4 +56,6 @@ export interface DashboardStats {
   topCreators: CreatorWithMetrics[];
   impressionsOverTime: { date: string; impressions: number }[];
   weeks: { start: string; end: string; label: string }[];
+  totalReferrals: number;
+  totalReferredVolume: number;
 }

@@ -130,11 +130,28 @@ export async function GET(request: NextRequest) {
 
   const weeks = generateWeeks();
 
+  // Referral stats
+  const totalReferrals = await prisma.referral.count();
+  let totalReferredVolume = 0;
+  try {
+    const { getAllTraderMetrics } = await import("@/lib/dune");
+    const allMetrics = await getAllTraderMetrics();
+    const referrals = await prisma.referral.findMany();
+    for (const r of referrals) {
+      const metrics = allMetrics.get(r.walletAddress.toLowerCase());
+      if (metrics) totalReferredVolume += metrics.total_volume;
+    }
+  } catch {
+    // Dune unavailable, skip
+  }
+
   return NextResponse.json({
     totalCreators: creators.length,
     totalTrendleMentions: trendleMentions,
     totalImpressions,
     totalEngagement,
+    totalReferrals,
+    totalReferredVolume,
     recentMentions: allTweets.map((t) => ({
       id: t.id,
       tweetId: t.tweetId,
