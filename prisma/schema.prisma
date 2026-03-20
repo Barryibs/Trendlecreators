@@ -98,6 +98,16 @@ model Suggestion {
   createdAt DateTime @default(now())
 }
 
+model TimelineEvent {
+  id          String   @id @default(cuid())
+  date        String
+  title       String
+  description String?
+  category    String   @default("deployment")
+  status      String   @default("upcoming")
+  createdAt   DateTime @default(now())
+}
+
 model SyncLog {
   id         String   @id @default(cuid())
   syncType   String

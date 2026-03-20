@@ -65,6 +65,12 @@ export default function RootLayout({
             >
               Suggestions
             </Link>
+            <Link
+              href="/timeline"
+              className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
+            >
+              Timeline & Upcoming
+            </Link>
           </nav>
         </aside>
         <main className="flex-1 p-8 overflow-auto">{children}</main>
