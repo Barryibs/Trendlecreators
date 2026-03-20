@@ -1,26 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-// Get the Monday of the week containing a date
+// Get the Monday of the week containing a date (UTC-based)
 function getWeekStart(date: Date): string {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const day = d.getUTCDay();
+  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+  d.setUTCDate(diff);
   return d.toISOString().split("T")[0];
 }
 
-// Generate all weeks from March 1 to now
+// Generate weeks from March 2, 2026 (first Monday on/after March 1) up to current week only
 function generateWeeks(): { start: string; end: string; label: string }[] {
   const weeks: { start: string; end: string; label: string }[] = [];
   const now = new Date();
-  const current = new Date("2025-03-01T00:00:00Z");
-
-  // Align to Monday
-  const day = current.getDay();
-  if (day !== 1) {
-    current.setDate(current.getDate() - day + (day === 0 ? -6 : 1));
-  }
+  // March 1, 2026 is a Sunday — first Monday is March 2
+  const current = new Date("2026-03-02T00:00:00Z");
 
   while (current <= now) {
     const weekEnd = new Date(current);
@@ -43,7 +38,7 @@ export async function GET(request: NextRequest) {
   // Date filter — default is all time from March 1
   const startDate = weekStart
     ? new Date(weekStart + "T00:00:00Z")
-    : new Date("2025-03-01T00:00:00Z");
+    : new Date("2026-03-01T00:00:00Z");
   const endDate = weekStart
     ? new Date(
         new Date(weekStart + "T00:00:00Z").getTime() + 7 * 24 * 60 * 60 * 1000
@@ -115,7 +110,7 @@ export async function GET(request: NextRequest) {
   const allMentionTweets = await prisma.tweet.findMany({
     where: {
       mentionsTrendle: true,
-      postedAt: { gte: new Date("2025-03-01T00:00:00Z") },
+      postedAt: { gte: new Date("2026-03-01T00:00:00Z") },
     },
     orderBy: { postedAt: "asc" },
   });
@@ -129,9 +124,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const impressionsOverTime = Array.from(impressionsByWeek.entries()).map(
-    ([week, impressions]) => ({ date: week, impressions })
-  );
+  const impressionsOverTime = Array.from(impressionsByWeek.entries())
+    .filter(([week]) => week >= "2026-03-01")
+    .map(([week, impressions]) => ({ date: week, impressions }));
 
   const weeks = generateWeeks();
 

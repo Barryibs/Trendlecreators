@@ -1,7 +1,7 @@
 import { TwitterApi } from "twitter-api-v2";
 
 // March 1, 2025 — program tracking start date
-export const TRACKING_START = "2025-03-01T00:00:00Z";
+export const TRACKING_START = "2026-03-01T00:00:00Z";
 
 let client: TwitterApi | null = null;
 
