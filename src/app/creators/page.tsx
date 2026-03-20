@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { CreatorForm } from "@/components/creator-form";
 import type { CreatorWithMetrics } from "@/types";
 
 function formatNum(n: number): string {
@@ -31,28 +30,15 @@ export default function CreatorsPage() {
     fetchCreators();
   }, [fetchCreators]);
 
-  async function handleDelete(id: string) {
-    if (!confirm("Remove this creator?")) return;
-    await fetch(`/api/creators/${id}`, { method: "DELETE" });
-    fetchCreators();
-  }
-
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">Creators</h2>
-
-      <div className="mb-8 max-w-xl">
-        <h3 className="text-sm font-semibold mb-3">Add a Creator</h3>
-        <CreatorForm onAdded={fetchCreators} />
-      </div>
 
       {loading ? (
         <p className="text-muted-foreground">Loading creators...</p>
       ) : creators.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center">
-          <p className="text-muted-foreground">
-            No creators added yet. Add an X username above to get started.
-          </p>
+          <p className="text-muted-foreground">No creators in the program yet.</p>
         </div>
       ) : (
         <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -77,7 +63,6 @@ export default function CreatorsPage() {
                 <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
                   Interactions
                 </th>
-                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
@@ -117,14 +102,6 @@ export default function CreatorsPage() {
                     {formatNum(c.totalEngagement)}
                   </td>
                   <td className="px-4 py-3 text-sm">{c.interactionCount}</td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => handleDelete(c.id)}
-                      className="text-xs text-destructive hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </td>
                 </tr>
               ))}
             </tbody>

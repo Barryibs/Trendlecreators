@@ -53,6 +53,18 @@ export default function RootLayout({
             >
               Trendle Tweets
             </Link>
+            <Link
+              href="/goals"
+              className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
+            >
+              Weekly Goals
+            </Link>
+            <Link
+              href="/suggestions"
+              className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
+            >
+              Suggestions
+            </Link>
           </nav>
         </aside>
         <main className="flex-1 p-8 overflow-auto">{children}</main>

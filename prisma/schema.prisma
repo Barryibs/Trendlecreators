@@ -81,6 +81,23 @@ model Referral {
   @@unique([creatorId, walletAddress])
 }
 
+model WeeklyGoal {
+  id        String   @id @default(cuid())
+  weekStart String
+  title     String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Suggestion {
+  id        String   @id @default(cuid())
+  author    String
+  category  String   @default("general")
+  text      String
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+}
+
 model SyncLog {
   id         String   @id @default(cuid())
   syncType   String
