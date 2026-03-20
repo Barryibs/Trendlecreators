@@ -102,7 +102,7 @@ export default function DashboardPage() {
         />
         <StatCard
           label="Referred Volume"
-          value={"$" + formatNum(stats.totalReferredVolume || 0)}
+          value={"$" + (stats.totalReferredVolume || 0).toFixed(2)}
         />
       </div>
 
