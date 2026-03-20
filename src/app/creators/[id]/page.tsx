@@ -91,6 +91,47 @@ function formatDate(d: string): string {
   });
 }
 
+function getWeekMonday(dateStr: string): string {
+  const d = new Date(dateStr);
+  const day = d.getUTCDay();
+  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+  d.setUTCDate(diff);
+  return d.toISOString().split("T")[0];
+}
+
+function groupByWeek(tweets: CreatorTweet[]) {
+  const groups = new Map<
+    string,
+    { tweets: CreatorTweet[]; views: number; engagement: number }
+  >();
+
+  for (const t of tweets) {
+    const weekKey = getWeekMonday(t.postedAt);
+    const existing = groups.get(weekKey) || { tweets: [], views: 0, engagement: 0 };
+    existing.tweets.push(t);
+    existing.views += t.impressions;
+    existing.engagement += t.likes + t.retweets + t.replies + t.quotes;
+    groups.set(weekKey, existing);
+  }
+
+  return Array.from(groups.entries())
+    .sort(([a], [b]) => b.localeCompare(a)) // newest week first
+    .map(([weekKey, data]) => {
+      const monday = new Date(weekKey + "T00:00:00Z");
+      const sunday = new Date(monday);
+      sunday.setUTCDate(sunday.getUTCDate() + 6);
+      const label = `Week of ${monday.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${sunday.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+      return {
+        weekLabel: label,
+        weekViews: data.views,
+        weekEngagement: data.engagement,
+        tweets: data.tweets.sort(
+          (a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()
+        ),
+      };
+    });
+}
+
 export default function CreatorDetailPage() {
   const params = useParams();
   const [creator, setCreator] = useState<CreatorDetail | null>(null);
@@ -276,58 +317,72 @@ export default function CreatorDetailPage() {
               <p className="text-muted-foreground text-sm">No posts found yet.</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
-              {filtered.map((t) => (
-                <a
-                  key={t.id}
-                  href={`https://x.com/${creator.username}/status/${t.tweetId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block bg-card rounded-xl border border-border p-5 hover:border-primary transition-colors"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        t.isQuoteTweet
-                          ? "bg-purple-100 text-purple-700"
-                          : "bg-blue-100 text-blue-700"
-                      }`}
-                    >
-                      {t.isQuoteTweet ? "Quote Tweet" : "Mention"}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(t.postedAt)}
-                    </span>
-                  </div>
-                  <p className="text-sm leading-relaxed mb-3">{t.text}</p>
-                  {t.isQuoteTweet && t.quotedTrendle && (
-                    <div className="bg-muted rounded-lg p-3 mb-3 border-l-2 border-primary">
-                      <p className="text-xs text-muted-foreground mb-1">
-                        Quoting @trendlefi:
-                      </p>
-                      <p className="text-sm line-clamp-2 text-muted-foreground">
-                        {t.quotedTrendle.text}
-                      </p>
+            <div className="flex flex-col gap-8">
+              {groupByWeek(filtered).map(({ weekLabel, weekViews, weekEngagement, tweets: weekTweets }) => (
+                <div key={weekLabel}>
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-border">
+                    <h4 className="text-sm font-semibold">{weekLabel}</h4>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span>{weekTweets.length} post{weekTweets.length !== 1 ? "s" : ""}</span>
+                      <span className="font-medium text-foreground">{formatNum(weekViews)} views</span>
+                      <span>{formatNum(weekEngagement)} engagement</span>
                     </div>
-                  )}
-                  {t.isQuoteTweet && t.quotedTweetId && !t.quotedTrendle && (
-                    <div className="bg-muted rounded-lg p-3 mb-3 border-l-2 border-primary">
-                      <p className="text-xs text-muted-foreground">
-                        Quoted @trendlefi post
-                      </p>
-                    </div>
-                  )}
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">
-                      {formatNum(t.impressions)} views
-                    </span>
-                    <span>{formatNum(t.likes)} likes</span>
-                    <span>{formatNum(t.retweets)} retweets</span>
-                    <span>{formatNum(t.replies)} replies</span>
-                    {t.quotes > 0 && <span>{formatNum(t.quotes)} quotes</span>}
-                    <span className="ml-auto text-primary">View on X &rarr;</span>
                   </div>
-                </a>
+                  <div className="flex flex-col gap-4">
+                    {weekTweets.map((t) => (
+                      <a
+                        key={t.id}
+                        href={`https://x.com/${creator.username}/status/${t.tweetId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block bg-card rounded-xl border border-border p-5 hover:border-primary transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-3">
+                          <span
+                            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                              t.isQuoteTweet
+                                ? "bg-purple-100 text-purple-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
+                            {t.isQuoteTweet ? "Quote Tweet" : "Mention"}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(t.postedAt)}
+                          </span>
+                        </div>
+                        <p className="text-sm leading-relaxed mb-3">{t.text}</p>
+                        {t.isQuoteTweet && t.quotedTrendle && (
+                          <div className="bg-muted rounded-lg p-3 mb-3 border-l-2 border-primary">
+                            <p className="text-xs text-muted-foreground mb-1">
+                              Quoting @trendlefi:
+                            </p>
+                            <p className="text-sm line-clamp-2 text-muted-foreground">
+                              {t.quotedTrendle.text}
+                            </p>
+                          </div>
+                        )}
+                        {t.isQuoteTweet && t.quotedTweetId && !t.quotedTrendle && (
+                          <div className="bg-muted rounded-lg p-3 mb-3 border-l-2 border-primary">
+                            <p className="text-xs text-muted-foreground">
+                              Quoted @trendlefi post
+                            </p>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                          <span className="font-medium text-foreground">
+                            {formatNum(t.impressions)} views
+                          </span>
+                          <span>{formatNum(t.likes)} likes</span>
+                          <span>{formatNum(t.retweets)} retweets</span>
+                          <span>{formatNum(t.replies)} replies</span>
+                          {t.quotes > 0 && <span>{formatNum(t.quotes)} quotes</span>}
+                          <span className="ml-auto text-primary">View on X &rarr;</span>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
