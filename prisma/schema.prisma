@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Creator {
+  id            String        @id @default(cuid())
+  twitterId     String        @unique
+  username      String        @unique
+  displayName   String
+  profileImage  String?
+  followerCount Int           @default(0)
+  walletAddress String?
+  addedAt       DateTime      @default(now())
+  tweets        Tweet[]
+  interactions  Interaction[]
+  referrals     Referral[]
+}
+
+model Tweet {
+  id              String   @id @default(cuid())
+  tweetId         String   @unique
+  creatorId       String
+  creator         Creator  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  text            String
+  postedAt        DateTime
+  impressions     Int      @default(0)
+  likes           Int      @default(0)
+  retweets        Int      @default(0)
+  replies         Int      @default(0)
+  quotes          Int      @default(0)
+  mentionsTrendle Boolean  @default(false)
+  isQuoteTweet    Boolean  @default(false)
+  quotedTweetId   String?
+  fetchedAt       DateTime @default(now())
+}
+
+model TrendleTweet {
+  id           String        @id @default(cuid())
+  tweetId      String        @unique
+  text         String
+  postedAt     DateTime
+  impressions  Int           @default(0)
+  likes        Int           @default(0)
+  retweets     Int           @default(0)
+  replies      Int           @default(0)
+  interactions Interaction[]
+  fetchedAt    DateTime      @default(now())
+}
+
+model Interaction {
+  id                 String       @id @default(cuid())
+  creatorId          String
+  creator            Creator      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  trendleTweetId     String
+  trendleTweet       TrendleTweet @relation(fields: [trendleTweetId], references: [id], onDelete: Cascade)
+  type               String
+  interactionTweetId String?
+  detectedAt         DateTime     @default(now())
+
+  @@unique([creatorId, trendleTweetId, type])
+}
+
+model Referral {
+  id            String   @id @default(cuid())
+  creatorId     String
+  creator       Creator  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  walletAddress String
+  createdAt     DateTime @default(now())
+  tradingVolume Float    @default(0)
+  tradingFees   Float    @default(0)
+  holdingFees   Float    @default(0)
+  imbalanceFees Float    @default(0)
+  fundingFees   Float    @default(0)
+  totalTrades   Int      @default(0)
+
+  @@unique([creatorId, walletAddress])
+}
+
+model SyncLog {
+  id         String   @id @default(cuid())
+  syncType   String
+  status     String
+  tweetsRead Int      @default(0)
+  details    String?
+  createdAt  DateTime @default(now())
+}
