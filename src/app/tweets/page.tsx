@@ -288,8 +288,7 @@ export default function TrendleTweetsPage() {
                   </div>
                 </button>
 
-                {(expandedWeek === w.weekKey ||
-                  expandedWeek === null) && (
+                {expandedWeek === w.weekKey && (
                   <div className="flex flex-col gap-4">
                     {w.tweets.map((t) => (
                       <div
