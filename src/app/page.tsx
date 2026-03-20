@@ -5,7 +5,6 @@ import Link from "next/link";
 import { StatCard } from "@/components/stat-card";
 import { TweetCard } from "@/components/tweet-card";
 import { ImpressionsChart } from "@/components/impressions-chart";
-import { SyncButton } from "@/components/sync-button";
 import type { DashboardStats } from "@/types";
 
 function formatNum(n: number): string {
@@ -79,9 +78,6 @@ export default function DashboardPage() {
               )
             )}
           </select>
-          <SyncButton
-            onSynced={() => fetchData(selectedWeek || undefined)}
-          />
         </div>
       </div>
 
