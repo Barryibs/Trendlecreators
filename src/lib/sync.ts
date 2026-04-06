@@ -4,6 +4,7 @@ import {
   searchRecentTweets,
   getRetweetedBy,
   getLikingUsers,
+  lookupUser,
   TRACKING_START,
 } from "./twitter";
 
@@ -536,10 +537,74 @@ export async function refreshMetrics() {
   await log("refresh_metrics", "success", updated, `${updated} tweets updated/found`);
 }
 
+export async function syncDuneMetrics() {
+  try {
+    const { getAllTraderMetrics } = await import("./dune");
+    const allMetrics = await getAllTraderMetrics();
+    const referrals = await prisma.referral.findMany();
+
+    let updated = 0;
+    for (const referral of referrals) {
+      const metrics = allMetrics.get(referral.walletAddress.toLowerCase());
+      if (!metrics) continue;
+
+      await prisma.referral.update({
+        where: { id: referral.id },
+        data: {
+          tradingVolume: metrics.total_volume,
+          tradingFees: metrics.total_trading_fees,
+          holdingFees: metrics.total_holding_fees,
+          imbalanceFees: metrics.total_imbalance_fees,
+          fundingFees: metrics.total_funding_fees_paid,
+          totalTrades: metrics.total_trades,
+        },
+      });
+      updated++;
+    }
+
+    await log("dune_metrics", "success", updated, `${updated} referral wallets updated`);
+  } catch (error) {
+    await log(
+      "dune_metrics",
+      "error",
+      0,
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function syncCreatorProfiles() {
+  const creators = await prisma.creator.findMany();
+  let updated = 0;
+
+  for (const creator of creators) {
+    try {
+      const user = await lookupUser(creator.username);
+      if (!user) continue;
+
+      await prisma.creator.update({
+        where: { id: creator.id },
+        data: {
+          displayName: user.name,
+          profileImage: user.profile_image_url || null,
+          followerCount: user.public_metrics?.followers_count || creator.followerCount,
+        },
+      });
+      updated++;
+    } catch {
+      // Skip on rate limit or error
+    }
+  }
+
+  await log("creator_profiles", "success", updated, `${updated} profiles updated`);
+}
+
 export async function runFullSync() {
+  await syncCreatorProfiles();
   await syncTrendleTweets();
   await syncCreatorTimelines();
   await syncTrendleMentions();
   await refreshMetrics();
   await detectInteractions();
+  await syncDuneMetrics();
 }

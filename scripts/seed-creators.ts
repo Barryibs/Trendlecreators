@@ -21,6 +21,9 @@ const creators = [
   { twitterId: "1706246745099747328", username: "monasex_1", displayName: "Monasex", profileImage: "https://pbs.twimg.com/profile_images/1996993399304359936/QaOFfj20_normal.jpg", followerCount: 3186 },
   { twitterId: "1767174047979225088", username: "cryptovcdegen", displayName: "cryptovcdegen", profileImage: "https://pbs.twimg.com/profile_images/1866726357511630848/Snj2dFn__normal.jpg", followerCount: 2684 },
   { twitterId: "1250437771174367235", username: "Baheet_", displayName: "Baheet", profileImage: "https://pbs.twimg.com/profile_images/1707027976276123648/K78g2kJK_normal.jpg", followerCount: 5441 },
+  { twitterId: "842299978932338689", username: "0xvinhpham", displayName: "0xvinhpham", profileImage: "https://pbs.twimg.com/profile_images/2032438300947234816/xenHPARa_normal.jpg", followerCount: 5796 },
+  { twitterId: "1523466398294417408", username: "0xMegamus", displayName: "Megamus.hl", profileImage: "https://pbs.twimg.com/profile_images/1960010904957038592/DeCzBp4T_normal.jpg", followerCount: 23645 },
+  { twitterId: "1767764573728174080", username: "0xRyderr", displayName: "Ryder", profileImage: "https://pbs.twimg.com/profile_images/1833156716000874496/AlzEn-b7_normal.jpg", followerCount: 16126 },
 ];
 
 async function main() {

@@ -16,6 +16,7 @@ const wallets: Record<string, string> = {
   "marilyn100x": "0xa28989B5EfF508d27B1De8CF40f64924044C8b0B",
   "vicsclarissa": "0xA95a7367E17Fd235768Bb5f7ad2721c31cBf7FB7",
   "cryptovcdegen": "0xB576c60f2dCEE8B7Fa9f43C7eC6135BEe9a8E564",
+  "0xRyderr": "0xCEbD7eC98678C4cFd19A2774Cd281E1bB8386320",
 };
 
 async function main() {
