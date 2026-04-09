@@ -59,7 +59,10 @@ const CATEGORIES = [
 export default function MarketVisualsPage() {
   const [selectedMarket, setSelectedMarket] = useState<TrendleMarket>(MARKETS[0]);
   const [filterCat, setFilterCat] = useState("all");
-  const [imageExists, setImageExists] = useState(false);
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+  const [hasCached, setHasCached] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -69,15 +72,48 @@ export default function MarketVisualsPage() {
       : MARKETS.filter((m) => m.category === filterCat);
 
   const tradeUrl = `https://trendle.fi/${selectedMarket.slug}`;
-  const screenshotSrc = `/screenshots/${selectedMarket.slug}.png`;
+  const cachedSrc = `/screenshots/${selectedMarket.slug}.png`;
 
+  // Check if a cached screenshot exists when market changes
   useEffect(() => {
-    setImageExists(false);
+    setScreenshotUrl(null);
+    setHasCached(false);
+    setError(null);
     const img = new Image();
-    img.onload = () => setImageExists(true);
-    img.onerror = () => setImageExists(false);
-    img.src = screenshotSrc;
-  }, [screenshotSrc]);
+    img.onload = () => {
+      setHasCached(true);
+      setScreenshotUrl(cachedSrc);
+    };
+    img.onerror = () => setHasCached(false);
+    img.src = cachedSrc;
+  }, [cachedSrc]);
+
+  const handleGenerate = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 120000);
+      const res = await fetch(`/api/capture-card?slug=${selectedMarket.slug}`, {
+        signal: controller.signal,
+        cache: "no-store",
+      });
+      clearTimeout(timeout);
+      if (!res.ok) throw new Error("Failed to capture");
+      const blob = await res.blob();
+      // Revoke old URL if any
+      if (screenshotUrl && screenshotUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(screenshotUrl);
+      }
+      const url = URL.createObjectURL(blob);
+      setScreenshotUrl(url);
+      setHasCached(true);
+    } catch {
+      setError("Failed to generate visual. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
@@ -127,7 +163,7 @@ export default function MarketVisualsPage() {
     <div>
       <h2 className="text-2xl font-bold mb-2">Market Visuals</h2>
       <p className="text-sm text-muted-foreground mb-6">
-        Select a market to generate a shareable visual for tweets.
+        Generate shareable market visuals with live prices from Trendle.
       </p>
 
       {/* Controls */}
@@ -170,11 +206,37 @@ export default function MarketVisualsPage() {
               ))}
             </div>
           </div>
+
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            className="self-start px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+          >
+            {loading ? "Generating..." : "Generate Visual"}
+          </button>
         </div>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-6 text-sm">
+          {error}
+        </div>
+      )}
+
+      {loading && (
+        <div className="bg-card rounded-xl border border-border p-12 text-center mb-6">
+          <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-muted-foreground text-sm">
+            Capturing live data from trendle.fi...
+          </p>
+          <p className="text-muted-foreground text-xs mt-1">
+            First time takes ~30s, subsequent captures are faster
+          </p>
+        </div>
+      )}
+
       {/* Visual */}
-      {imageExists ? (
+      {screenshotUrl && !loading && (
         <>
           <div className="flex gap-2 mb-4">
             <button
@@ -213,7 +275,7 @@ export default function MarketVisualsPage() {
             {/* Market card screenshot */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={screenshotSrc}
+              src={screenshotUrl}
               alt={`${selectedMarket.name} attention market`}
               style={{ width: "100%", display: "block" }}
             />
@@ -228,7 +290,6 @@ export default function MarketVisualsPage() {
                   borderRadius: "12px",
                   padding: "12px",
                   textAlign: "center",
-                  cursor: "pointer",
                 }}
               >
                 <div style={{ color: "#22c55e", fontWeight: 700, fontSize: "16px" }}>Up</div>
@@ -242,7 +303,6 @@ export default function MarketVisualsPage() {
                   borderRadius: "12px",
                   padding: "12px",
                   textAlign: "center",
-                  cursor: "pointer",
                 }}
               >
                 <div style={{ color: "#ef4444", fontWeight: 700, fontSize: "16px" }}>Down</div>
@@ -250,7 +310,7 @@ export default function MarketVisualsPage() {
               </div>
             </div>
 
-            {/* Footer: Trendle branding + trade link */}
+            {/* Footer: Trendle logo + link + Trade Now */}
             <div
               style={{
                 padding: "12px 16px 16px",
@@ -261,33 +321,23 @@ export default function MarketVisualsPage() {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <div
-                  style={{
-                    width: "24px",
-                    height: "24px",
-                    borderRadius: "6px",
-                    background: "linear-gradient(135deg, #6366f1, #818cf8)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 800,
-                    color: "#fff",
-                    fontSize: "12px",
-                  }}
-                >
-                  T
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/trendle-logo.png"
+                  alt="Trendle"
+                  style={{ width: "28px", height: "28px", borderRadius: "6px" }}
+                />
                 <span style={{ color: "#a1a1aa", fontSize: "13px" }}>
                   trendle.fi/{selectedMarket.slug}
                 </span>
               </div>
               <div
                 style={{
-                  background: "linear-gradient(135deg, #6366f1, #818cf8)",
+                  background: "#CCFF00",
                   padding: "6px 14px",
                   borderRadius: "8px",
-                  color: "#fff",
-                  fontWeight: 600,
+                  color: "#000",
+                  fontWeight: 700,
                   fontSize: "12px",
                 }}
               >
@@ -312,13 +362,13 @@ export default function MarketVisualsPage() {
             </div>
           </div>
         </>
-      ) : (
+      )}
+
+      {/* Empty state - no cached image and not loading */}
+      {!screenshotUrl && !loading && !error && (
         <div className="bg-card rounded-xl border border-border p-12 text-center">
           <p className="text-muted-foreground text-sm">
-            No screenshot available for {selectedMarket.name} yet.
-          </p>
-          <p className="text-muted-foreground text-xs mt-2">
-            Run <code className="bg-muted px-1.5 py-0.5 rounded">npx tsx scripts/capture-market-cards.ts</code> to capture.
+            Select a market and click &quot;Generate Visual&quot; to capture a live screenshot with current prices.
           </p>
         </div>
       )}
