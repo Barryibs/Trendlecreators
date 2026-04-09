@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface TrendleMarket {
   name: string;
@@ -9,7 +9,6 @@ interface TrendleMarket {
 }
 
 const MARKETS: TrendleMarket[] = [
-  // Crypto
   { name: "Bitcoin", slug: "bitcoin", category: "crypto" },
   { name: "Solana", slug: "solana", category: "crypto" },
   { name: "Hyperliquid", slug: "hyperliquid", category: "crypto" },
@@ -20,7 +19,6 @@ const MARKETS: TrendleMarket[] = [
   { name: "Kalshi", slug: "kalshi", category: "crypto" },
   { name: "Artemis", slug: "artemis", category: "crypto" },
   { name: "OpenClaw", slug: "openclaw", category: "crypto" },
-  // People
   { name: "Elon Musk", slug: "elon-musk", category: "people" },
   { name: "Donald Trump", slug: "donald-trump", category: "people" },
   { name: "Drake", slug: "drake", category: "people" },
@@ -34,17 +32,14 @@ const MARKETS: TrendleMarket[] = [
   { name: "ZachXBT", slug: "zachxbt", category: "people" },
   { name: "Palm Beach Pete", slug: "palm-beach-pete", category: "people" },
   { name: "Punch Kun", slug: "punch-kun", category: "people" },
-  // Entertainment
   { name: "GTA 6", slug: "gta-6", category: "entertainment" },
   { name: "Pokemon", slug: "pokemon", category: "entertainment" },
   { name: "Harry Potter", slug: "harry-potter", category: "entertainment" },
   { name: "Sydney Sweeney", slug: "sydney-sweeney", category: "entertainment" },
   { name: "Margot Robbie", slug: "margot-robbie", category: "entertainment" },
-  // Tech
   { name: "Anthropic", slug: "anthropic", category: "tech" },
   { name: "ChatGPT", slug: "chatgpt", category: "tech" },
   { name: "Mac Mini", slug: "mac-mini", category: "tech" },
-  // Other
   { name: "Creatine", slug: "creatine", category: "other" },
   { name: "KitKat", slug: "kitkat", category: "other" },
   { name: "Looksmaxxing", slug: "looksmaxxing", category: "other" },
@@ -64,9 +59,7 @@ const CATEGORIES = [
 export default function MarketVisualsPage() {
   const [selectedMarket, setSelectedMarket] = useState<TrendleMarket>(MARKETS[0]);
   const [filterCat, setFilterCat] = useState("all");
-  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [imageExists, setImageExists] = useState(false);
   const [copied, setCopied] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -76,29 +69,16 @@ export default function MarketVisualsPage() {
       : MARKETS.filter((m) => m.category === filterCat);
 
   const tradeUrl = `https://trendle.fi/${selectedMarket.slug}`;
+  const screenshotSrc = `/screenshots/${selectedMarket.slug}.png`;
 
-  const handleGenerate = async () => {
-    setLoading(true);
-    setError(null);
-    setScreenshotUrl(null);
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 120000);
-      const res = await fetch(`/api/market-screenshot?slug=${selectedMarket.slug}`, {
-        signal: controller.signal,
-        cache: "no-store",
-      });
-      clearTimeout(timeout);
-      if (!res.ok) throw new Error("Failed to capture");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      setScreenshotUrl(url);
-    } catch {
-      setError("Failed to capture market screenshot. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Check if screenshot exists when market changes
+  useEffect(() => {
+    setImageExists(false);
+    const img = new Image();
+    img.onload = () => setImageExists(true);
+    img.onerror = () => setImageExists(false);
+    img.src = screenshotSrc;
+  }, [screenshotSrc]);
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
@@ -148,13 +128,12 @@ export default function MarketVisualsPage() {
     <div>
       <h2 className="text-2xl font-bold mb-2">Market Visuals</h2>
       <p className="text-sm text-muted-foreground mb-6">
-        Capture live market visuals from Trendle to share under tweets.
+        Select a market to get a shareable visual from Trendle to post under tweets.
       </p>
 
       {/* Controls */}
       <div className="bg-card rounded-xl border border-border p-6 mb-6">
         <div className="flex flex-col gap-4">
-          {/* Category filter */}
           <div>
             <label className="text-sm font-medium mb-2 block">Category</label>
             <div className="flex flex-wrap gap-2">
@@ -174,18 +153,13 @@ export default function MarketVisualsPage() {
             </div>
           </div>
 
-          {/* Market selection */}
           <div>
             <label className="text-sm font-medium mb-2 block">Select Market</label>
             <div className="flex flex-wrap gap-2">
               {filtered.map((m) => (
                 <button
                   key={m.slug}
-                  onClick={() => {
-                    setSelectedMarket(m);
-                    setScreenshotUrl(null);
-                    setError(null);
-                  }}
+                  onClick={() => setSelectedMarket(m)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     selectedMarket.slug === m.slug
                       ? "bg-primary text-primary-foreground"
@@ -197,35 +171,11 @@ export default function MarketVisualsPage() {
               ))}
             </div>
           </div>
-
-          <button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="self-start px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50"
-          >
-            {loading ? "Capturing..." : "Capture Market Visual"}
-          </button>
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-6 text-sm">
-          {error}
-        </div>
-      )}
-
-      {loading && (
-        <div className="bg-card rounded-xl border border-border p-12 text-center">
-          <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-muted-foreground text-sm">
-            Capturing live screenshot from trendle.fi/{selectedMarket.slug}...
-          </p>
-          <p className="text-muted-foreground text-xs mt-1">This takes 30-60 seconds - please wait</p>
-        </div>
-      )}
-
-      {/* Screenshot result */}
-      {screenshotUrl && !loading && (
+      {/* Visual display */}
+      {imageExists ? (
         <>
           <div className="flex gap-2 mb-4">
             <button
@@ -250,7 +200,7 @@ export default function MarketVisualsPage() {
             </a>
           </div>
 
-          {/* The exportable card with screenshot + branding */}
+          {/* Exportable card */}
           <div
             ref={cardRef}
             style={{
@@ -261,18 +211,12 @@ export default function MarketVisualsPage() {
               fontFamily: "system-ui, -apple-system, sans-serif",
             }}
           >
-            {/* Live screenshot from trendle.fi */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={screenshotUrl}
+              src={screenshotSrc}
               alt={`${selectedMarket.name} attention market on Trendle`}
-              style={{
-                width: "100%",
-                display: "block",
-              }}
+              style={{ width: "100%", display: "block" }}
             />
-
-            {/* Bottom branding bar */}
             <div
               style={{
                 padding: "16px 20px",
@@ -321,7 +265,7 @@ export default function MarketVisualsPage() {
             </div>
           </div>
 
-          {/* Copy tweet text */}
+          {/* Tweet text */}
           <div className="mt-4 bg-card rounded-xl border border-border p-4" style={{ maxWidth: "440px" }}>
             <p className="text-sm text-muted-foreground mb-2">Tweet text:</p>
             <div className="flex items-center gap-2">
@@ -337,13 +281,13 @@ export default function MarketVisualsPage() {
             </div>
           </div>
         </>
-      )}
-
-      {/* Empty state */}
-      {!screenshotUrl && !loading && !error && (
+      ) : (
         <div className="bg-card rounded-xl border border-border p-12 text-center">
           <p className="text-muted-foreground text-sm">
-            Select a market then click &quot;Capture Market Visual&quot; to grab a live screenshot from trendle.fi.
+            No screenshot available for {selectedMarket.name} yet.
+          </p>
+          <p className="text-muted-foreground text-xs mt-2">
+            Run <code className="bg-muted px-1.5 py-0.5 rounded">npx tsx scripts/capture-markets.ts</code> to capture market screenshots.
           </p>
         </div>
       )}
