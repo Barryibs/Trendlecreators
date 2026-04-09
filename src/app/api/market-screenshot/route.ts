@@ -10,7 +10,7 @@ async function getBrowser() {
     return browserInstance;
   }
   browserInstance = await puppeteer.launch({
-    headless: "new",
+    headless: true,
     executablePath:
       process.env.CHROME_PATH ||
       "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -61,8 +61,36 @@ export async function GET(req: NextRequest) {
       )
       .catch(() => {});
 
-    // Extra wait for gradient fill to fully render
-    await new Promise((r) => setTimeout(r, 2000));
+    // Fix SVG gradients that don't render in headless Chrome:
+    // Replace gradient fills with solid colors and boost stroke visibility
+    await page.evaluate(() => {
+      const svgs = document.querySelectorAll("svg");
+      for (const svg of svgs) {
+        const rect = svg.getBoundingClientRect();
+        if (rect.width < 200 || rect.height < 100) continue;
+        const paths = svg.querySelectorAll("path");
+        for (const path of paths) {
+          const fill = path.getAttribute("fill") || "";
+          const stroke = path.getAttribute("stroke") || "";
+          const d = path.getAttribute("d") || "";
+          if (d.length < 100) continue;
+          // Chart area fill - make gradient visible as semi-transparent solid
+          if (fill.includes("url(#")) {
+            const isGreen = svg.innerHTML.includes("#22C55E");
+            path.setAttribute(
+              "fill",
+              isGreen ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"
+            );
+          }
+          // Chart stroke line
+          if (stroke && stroke !== "none" && !stroke.includes("url(")) {
+            path.setAttribute("stroke-width", "2");
+          }
+        }
+      }
+    });
+
+    await new Promise((r) => setTimeout(r, 500));
 
     const screenshot = await page.screenshot({
       type: "png",
