@@ -281,32 +281,46 @@ export default function MarketVisualsPage() {
             />
 
             {/* UP / DOWN buttons */}
-            <div style={{ display: "flex", gap: "10px", padding: "12px 16px" }}>
+            <div
+              style={{
+                display: "flex",
+                margin: "0 12px",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "14px",
+                overflow: "hidden",
+              }}
+            >
               <div
                 style={{
                   flex: 1,
-                  background: "rgba(34,197,94,0.15)",
-                  border: "1px solid rgba(34,197,94,0.4)",
+                  background: "rgba(34,197,94,0.12)",
+                  border: "1px solid rgba(34,197,94,0.3)",
                   borderRadius: "12px",
+                  margin: "4px",
                   padding: "12px",
                   textAlign: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
                 }}
               >
-                <div style={{ color: "#22c55e", fontWeight: 700, fontSize: "16px" }}>Up</div>
-                <div style={{ color: "#4ade80", fontSize: "11px", marginTop: "2px" }}>Attention Rising</div>
+                <span style={{ color: "#22c55e", fontSize: "14px" }}>&#8599;</span>
+                <span style={{ color: "#22c55e", fontWeight: 600, fontSize: "15px" }}>Up</span>
               </div>
               <div
                 style={{
                   flex: 1,
-                  background: "rgba(239,68,68,0.15)",
-                  border: "1px solid rgba(239,68,68,0.4)",
-                  borderRadius: "12px",
                   padding: "12px",
                   textAlign: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
                 }}
               >
-                <div style={{ color: "#ef4444", fontWeight: 700, fontSize: "16px" }}>Down</div>
-                <div style={{ color: "#f87171", fontSize: "11px", marginTop: "2px" }}>Attention Fading</div>
+                <span style={{ color: "#a1a1aa", fontSize: "14px" }}>&#8600;</span>
+                <span style={{ color: "#a1a1aa", fontWeight: 600, fontSize: "15px" }}>Down</span>
               </div>
             </div>
 
