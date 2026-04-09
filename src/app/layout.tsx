@@ -42,34 +42,16 @@ export default function RootLayout({
               Dashboard
             </Link>
             <Link
-              href="/creators"
-              className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
-            >
-              Creators
-            </Link>
-            <Link
               href="/tweets"
               className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
             >
               Trendle Tweets
             </Link>
             <Link
-              href="/goals"
-              className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
-            >
-              Weekly Goals
-            </Link>
-            <Link
               href="/suggestions"
               className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
             >
               Suggestions
-            </Link>
-            <Link
-              href="/timeline"
-              className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
-            >
-              Timeline & Upcoming
             </Link>
             <Link
               href="/market-visuals"

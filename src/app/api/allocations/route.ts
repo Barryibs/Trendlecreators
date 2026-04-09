@@ -218,9 +218,11 @@ export async function GET(req: NextRequest) {
   const active = allocations.filter((a) => a.score > 0);
   const inactive = allocations.filter((a) => a.score === 0);
 
+  // Normalize scores to 0-10 scale and compute payouts
+  const maxScore = active.length > 0 ? Math.max(...active.map((a) => a.score)) : 0;
+  const minScore = active.length > 0 ? Math.min(...active.map((a) => a.score)) : 0;
+
   if (active.length > 0) {
-    const maxScore = Math.max(...active.map((a) => a.score));
-    const minScore = Math.min(...active.map((a) => a.score));
     for (const a of active) {
       if (maxScore === minScore) {
         a.payout = Math.round((MIN_PAYOUT + MAX_PAYOUT) / 2);
@@ -233,9 +235,18 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Add score10 (0-10 scale) to each allocation
+  const withScore10 = allocations.map((a) => ({
+    ...a,
+    score10:
+      maxScore === 0
+        ? 0
+        : Math.round((a.score / maxScore) * 100) / 10,
+  }));
+
   const sorted = [
-    ...active.sort((a, b) => b.payout - a.payout),
-    ...inactive.map((a) => ({ ...a, payout: 0 })),
+    ...withScore10.filter((a) => a.score > 0).sort((a, b) => b.payout - a.payout),
+    ...withScore10.filter((a) => a.score === 0).map((a) => ({ ...a, payout: 0 })),
   ];
 
   const totalAllocated = sorted.reduce((s, a) => s + a.payout, 0);

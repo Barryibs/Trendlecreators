@@ -28,6 +28,7 @@ interface Allocation {
   referralCount: number;
   referralVolume: number;
   score: number;
+  score10: number;
   payout: number;
 }
 
@@ -364,7 +365,7 @@ export default function TeamPage() {
       })()}
 
       {/* ===== SECTION 3: All Creators Comparison Chart ===== */}
-      <h3 className="text-lg font-semibold mb-4">Creator Comparison - March Score</h3>
+      <h3 className="text-lg font-semibold mb-4">Creator Comparison - March Score /10</h3>
       <div className="bg-card rounded-xl border border-border p-5 mb-10">
         <ResponsiveContainer width="100%" height={Math.max(300, data.allocations.filter((a) => a.score > 0).length * 36)}>
           <BarChart
@@ -373,10 +374,10 @@ export default function TeamPage() {
             margin={{ left: 100 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => formatNum(v)} />
+            <XAxis type="number" tick={{ fontSize: 11 }} domain={[0, 10]} />
             <YAxis type="category" dataKey="username" tick={{ fontSize: 12 }} tickFormatter={(v) => `@${v}`} width={100} />
-            <Tooltip formatter={(v) => formatNum(Number(v))} />
-            <Bar dataKey="score" name="Score" fill="#6366f1" radius={[0, 4, 4, 0]}>
+            <Tooltip formatter={(v) => Number(v).toFixed(1) + " / 10"} />
+            <Bar dataKey="score10" name="Score /10" fill="#6366f1" radius={[0, 4, 4, 0]}>
               {data.allocations
                 .filter((a) => a.score > 0)
                 .map((_, i) => (
@@ -443,7 +444,7 @@ export default function TeamPage() {
               <th className="text-right px-4 py-3 font-semibold">Interactions</th>
               <th className="text-right px-4 py-3 font-semibold">Referrals</th>
               <th className="text-right px-4 py-3 font-semibold">Ref. Volume</th>
-              <th className="text-right px-4 py-3 font-semibold">Score</th>
+              <th className="text-right px-4 py-3 font-semibold">Score /10</th>
               <th className="text-right px-4 py-3 font-semibold">Payout</th>
             </tr>
           </thead>
@@ -469,7 +470,7 @@ export default function TeamPage() {
                 <td className="px-4 py-3 text-right">{a.interactionCount}</td>
                 <td className="px-4 py-3 text-right">{a.referralCount}</td>
                 <td className="px-4 py-3 text-right">{a.referralVolume > 0 ? `$${formatNum(a.referralVolume)}` : "-"}</td>
-                <td className="px-4 py-3 text-right font-mono text-xs">{formatNum(a.score)}</td>
+                <td className="px-4 py-3 text-right font-semibold">{a.score10.toFixed(1)}</td>
                 <td className="px-4 py-3 text-right">
                   {a.payout > 0 ? (
                     <span className="font-bold text-success">${a.payout}</span>
@@ -489,7 +490,7 @@ export default function TeamPage() {
               <td className="px-4 py-3 text-right">{data.allocations.reduce((s, a) => s + a.interactionCount, 0)}</td>
               <td className="px-4 py-3 text-right">{data.allocations.reduce((s, a) => s + a.referralCount, 0)}</td>
               <td className="px-4 py-3 text-right">${formatNum(data.allocations.reduce((s, a) => s + a.referralVolume, 0))}</td>
-              <td className="px-4 py-3 text-right"></td>
+              <td className="px-4 py-3 text-right">-</td>
               <td className="px-4 py-3 text-right text-success">${data.totalAllocated.toLocaleString()}</td>
             </tr>
           </tfoot>

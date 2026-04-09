@@ -148,36 +148,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div>
-        <h3 className="text-lg font-semibold mb-4">
-          Recent Trendle Mentions
-          {selectedWeek && (
-            <span className="text-sm font-normal text-muted-foreground ml-2">
-              (filtered)
-            </span>
-          )}
-        </h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {stats.recentMentions.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No mentions found{selectedWeek ? " for this week" : ""}. Add
-              creators and sync to see data.
-            </p>
-          )}
-          {stats.recentMentions.map((t) => (
-            <TweetCard
-              key={t.id}
-              text={t.text}
-              author={t.creator}
-              postedAt={t.postedAt}
-              impressions={t.impressions}
-              likes={t.likes}
-              retweets={t.retweets}
-              tweetId={t.tweetId}
-            />
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
