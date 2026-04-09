@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const browser = await puppeteer.launch({
-      headless: true,
+      headless: "new",
       executablePath: process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],
     });
@@ -29,8 +29,9 @@ export async function GET(req: NextRequest) {
       timeout: 60000,
     });
 
-    // Wait for chart to render
-    await new Promise((r) => setTimeout(r, 3000));
+    // Wait for chart SVG to render
+    await page.waitForSelector("svg", { timeout: 15000 }).catch(() => {});
+    await new Promise((r) => setTimeout(r, 5000));
 
     // Capture just the top portion with chart (crop out bottom nav/tweets)
     const screenshot = await page.screenshot({

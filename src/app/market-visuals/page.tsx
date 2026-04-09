@@ -82,7 +82,12 @@ export default function MarketVisualsPage() {
     setError(null);
     setScreenshotUrl(null);
     try {
-      const res = await fetch(`/api/market-screenshot?slug=${selectedMarket.slug}`);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 90000);
+      const res = await fetch(`/api/market-screenshot?slug=${selectedMarket.slug}`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
       if (!res.ok) throw new Error("Failed to capture");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
