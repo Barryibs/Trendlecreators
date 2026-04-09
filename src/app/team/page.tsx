@@ -29,6 +29,11 @@ interface Allocation {
   referralVolume: number;
   score: number;
   score10: number;
+  weeksWithPosts: number;
+  totalWeeks: number;
+  meetsContentReq: boolean;
+  meetsEngagementReq: boolean;
+  meetsMinimum: boolean;
   payout: number;
 }
 
@@ -57,8 +62,8 @@ interface AllocationsData {
   period: string;
   totalBudget: string;
   totalAllocated: number;
-  activeCreators: number;
-  inactiveCreators: number;
+  eligibleCreators: number;
+  ineligibleCreators: number;
   monthlyTotals: MonthlyTotal[];
   creatorMonthly: CreatorMonthly[];
 }
@@ -403,18 +408,36 @@ export default function TeamPage() {
           <div className="text-2xl font-bold mt-1">${data.totalAllocated.toLocaleString()}</div>
         </div>
         <div className="bg-card rounded-xl border border-border p-5">
-          <div className="text-sm text-muted-foreground">Active Creators</div>
-          <div className="text-2xl font-bold mt-1">{data.activeCreators}</div>
+          <div className="text-sm text-muted-foreground">Eligible</div>
+          <div className="text-2xl font-bold mt-1 text-success">{data.eligibleCreators}</div>
+        </div>
+        <div className="bg-card rounded-xl border border-border p-5">
+          <div className="text-sm text-muted-foreground">Not Eligible</div>
+          <div className="text-2xl font-bold mt-1 text-destructive">{data.ineligibleCreators}</div>
         </div>
         <div className="bg-card rounded-xl border border-border p-5">
           <div className="text-sm text-muted-foreground">Avg Payout</div>
           <div className="text-2xl font-bold mt-1">
-            ${data.activeCreators > 0 ? Math.round(data.totalAllocated / data.activeCreators) : 0}
+            ${data.eligibleCreators > 0 ? Math.round(data.totalAllocated / data.eligibleCreators) : 0}
           </div>
         </div>
-        <div className="bg-card rounded-xl border border-border p-5">
-          <div className="text-sm text-muted-foreground">No Contribution</div>
-          <div className="text-2xl font-bold mt-1">{data.inactiveCreators}</div>
+      </div>
+
+      {/* Minimum requirements */}
+      <div className="bg-card rounded-xl border border-border p-5 mb-6">
+        <h4 className="text-sm font-semibold mb-3">Minimum Requirements for Payout</h4>
+        <div className="text-xs text-muted-foreground space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className="text-success">&#10003;</span>
+            <span>At least 1 piece of content per week about Trendle (posts, articles, videos, quote tweets)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-success">&#10003;</span>
+            <span>Support Trendle&apos;s main account content (likes, retweets, comments on @trendlefi posts)</span>
+          </div>
+          <div className="mt-2 text-muted-foreground">
+            Creators who don&apos;t meet both requirements receive $0 regardless of score.
+          </div>
         </div>
       </div>
 
@@ -445,12 +468,13 @@ export default function TeamPage() {
               <th className="text-right px-4 py-3 font-semibold">Referrals</th>
               <th className="text-right px-4 py-3 font-semibold">Ref. Volume</th>
               <th className="text-right px-4 py-3 font-semibold">Score /10</th>
+              <th className="text-center px-4 py-3 font-semibold">Eligible</th>
               <th className="text-right px-4 py-3 font-semibold">Payout</th>
             </tr>
           </thead>
           <tbody>
             {data.allocations.map((a, i) => (
-              <tr key={a.id} className={`border-b border-border last:border-0 ${a.payout === 0 ? "opacity-40" : ""}`}>
+              <tr key={a.id} className={`border-b border-border last:border-0 ${a.payout === 0 ? "opacity-50" : ""}`}>
                 <td className="px-4 py-3 text-muted-foreground">{i + 1}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -464,13 +488,27 @@ export default function TeamPage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-right">{a.trendleMentions}</td>
+                <td className="px-4 py-3 text-right">
+                  <span className={a.meetsContentReq ? "" : "text-destructive"}>{a.trendleMentions}</span>
+                  <span className="text-xs text-muted-foreground ml-1">({a.weeksWithPosts}/{a.totalWeeks}w)</span>
+                </td>
                 <td className="px-4 py-3 text-right">{formatNum(a.totalImpressions)}</td>
                 <td className="px-4 py-3 text-right">{formatNum(a.totalEngagement)}</td>
-                <td className="px-4 py-3 text-right">{a.interactionCount}</td>
+                <td className="px-4 py-3 text-right">
+                  <span className={a.meetsEngagementReq ? "" : "text-destructive"}>{a.interactionCount}</span>
+                </td>
                 <td className="px-4 py-3 text-right">{a.referralCount}</td>
                 <td className="px-4 py-3 text-right">{a.referralVolume > 0 ? `$${formatNum(a.referralVolume)}` : "-"}</td>
                 <td className="px-4 py-3 text-right font-semibold">{a.score10.toFixed(1)}</td>
+                <td className="px-4 py-3 text-center">
+                  {a.meetsMinimum ? (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">Yes</span>
+                  ) : (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                      {!a.meetsContentReq && !a.meetsEngagementReq ? "No posts/engagement" : !a.meetsContentReq ? "Missing weekly posts" : "No engagement"}
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-right">
                   {a.payout > 0 ? (
                     <span className="font-bold text-success">${a.payout}</span>
@@ -491,6 +529,7 @@ export default function TeamPage() {
               <td className="px-4 py-3 text-right">{data.allocations.reduce((s, a) => s + a.referralCount, 0)}</td>
               <td className="px-4 py-3 text-right">${formatNum(data.allocations.reduce((s, a) => s + a.referralVolume, 0))}</td>
               <td className="px-4 py-3 text-right">-</td>
+              <td className="px-4 py-3 text-center">{data.eligibleCreators}/{data.allocations.length}</td>
               <td className="px-4 py-3 text-right text-success">${data.totalAllocated.toLocaleString()}</td>
             </tr>
           </tfoot>

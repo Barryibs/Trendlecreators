@@ -35,6 +35,28 @@ function getAllMonths(): string[] {
   return months;
 }
 
+// Get the weeks (Mon-Sun) that fall within a given month
+function getWeeksInMonth(yearMonth: string) {
+  const { start, end } = getMonthRange(yearMonth);
+  const weeks: { start: Date; end: Date }[] = [];
+  const cur = new Date(start);
+  // Align to Monday
+  const day = cur.getUTCDay();
+  if (day !== 1) {
+    // Don't go back before month start - first partial week counts
+  }
+  while (cur < end) {
+    const weekEnd = new Date(cur);
+    weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+    weeks.push({
+      start: new Date(cur),
+      end: weekEnd > end ? end : weekEnd,
+    });
+    cur.setUTCDate(cur.getUTCDate() + 7);
+  }
+  return weeks;
+}
+
 function computeScore(stats: {
   impressions: number;
   engagement: number;
@@ -195,6 +217,19 @@ export async function GET(req: NextRequest) {
       volume: referralVolume,
     });
 
+    // Check minimum requirements:
+    // 1. At least 1 Trendle post per week (count weeks with posts)
+    // 2. Some interaction with @trendlefi (likes, retweets, comments)
+    const weeksInMonth = getWeeksInMonth(PAYOUT_MONTH);
+    const weeksWithPosts = weeksInMonth.filter((week) =>
+      tweets.some(
+        (t) => t.postedAt >= week.start && t.postedAt < week.end
+      )
+    ).length;
+    const meetsContentReq = weeksWithPosts >= weeksInMonth.length;
+    const meetsEngagementReq = ints.length > 0;
+    const meetsMinimum = meetsContentReq && meetsEngagementReq;
+
     return {
       id: c.id,
       username: c.username,
@@ -211,19 +246,25 @@ export async function GET(req: NextRequest) {
       referralCount: refs.length,
       referralVolume: Math.round(referralVolume * 100) / 100,
       score,
+      weeksWithPosts,
+      totalWeeks: weeksInMonth.length,
+      meetsContentReq,
+      meetsEngagementReq,
+      meetsMinimum,
       payout: 0,
     };
   });
 
-  const active = allocations.filter((a) => a.score > 0);
-  const inactive = allocations.filter((a) => a.score === 0);
+  // Only creators meeting minimum requirements are eligible for payout
+  const eligible = allocations.filter((a) => a.meetsMinimum && a.score > 0);
+  const ineligible = allocations.filter((a) => !a.meetsMinimum || a.score === 0);
 
   // Normalize scores to 0-10 scale and compute payouts
-  const maxScore = active.length > 0 ? Math.max(...active.map((a) => a.score)) : 0;
-  const minScore = active.length > 0 ? Math.min(...active.map((a) => a.score)) : 0;
+  const maxScore = eligible.length > 0 ? Math.max(...eligible.map((a) => a.score)) : 0;
+  const minScore = eligible.length > 0 ? Math.min(...eligible.map((a) => a.score)) : 0;
 
-  if (active.length > 0) {
-    for (const a of active) {
+  if (eligible.length > 0) {
+    for (const a of eligible) {
       if (maxScore === minScore) {
         a.payout = Math.round((MIN_PAYOUT + MAX_PAYOUT) / 2);
       } else {
@@ -245,8 +286,8 @@ export async function GET(req: NextRequest) {
   }));
 
   const sorted = [
-    ...withScore10.filter((a) => a.score > 0).sort((a, b) => b.payout - a.payout),
-    ...withScore10.filter((a) => a.score === 0).map((a) => ({ ...a, payout: 0 })),
+    ...withScore10.filter((a) => a.meetsMinimum && a.score > 0).sort((a, b) => b.payout - a.payout),
+    ...withScore10.filter((a) => !a.meetsMinimum || a.score === 0).sort((a, b) => b.score - a.score),
   ];
 
   const totalAllocated = sorted.reduce((s, a) => s + a.payout, 0);
@@ -256,8 +297,8 @@ export async function GET(req: NextRequest) {
     period: getMonthLabel(PAYOUT_MONTH),
     totalBudget: `$${MIN_PAYOUT}-$${MAX_PAYOUT} per creator`,
     totalAllocated,
-    activeCreators: active.length,
-    inactiveCreators: inactive.length,
+    eligibleCreators: eligible.length,
+    ineligibleCreators: ineligible.length,
     monthlyTotals,
     creatorMonthly: creatorMonthly.filter((c) =>
       c.months.some((m) => m.score > 0)
