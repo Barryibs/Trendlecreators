@@ -83,6 +83,12 @@ export default function RootLayout({
             >
               PnL Calculator
             </Link>
+            <Link
+              href="/team"
+              className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
+            >
+              Trendle Team
+            </Link>
           </nav>
         </aside>
         <main className="flex-1 p-8 overflow-auto">{children}</main>
