@@ -83,9 +83,10 @@ export default function MarketVisualsPage() {
     setScreenshotUrl(null);
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 90000);
+      const timeout = setTimeout(() => controller.abort(), 120000);
       const res = await fetch(`/api/market-screenshot?slug=${selectedMarket.slug}`, {
         signal: controller.signal,
+        cache: "no-store",
       });
       clearTimeout(timeout);
       if (!res.ok) throw new Error("Failed to capture");
@@ -219,7 +220,7 @@ export default function MarketVisualsPage() {
           <p className="text-muted-foreground text-sm">
             Capturing live screenshot from trendle.fi/{selectedMarket.slug}...
           </p>
-          <p className="text-muted-foreground text-xs mt-1">This may take a few seconds</p>
+          <p className="text-muted-foreground text-xs mt-1">This takes 30-60 seconds - please wait</p>
         </div>
       )}
 
