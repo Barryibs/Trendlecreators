@@ -77,6 +77,12 @@ export default function RootLayout({
             >
               Market Visuals
             </Link>
+            <Link
+              href="/calculator"
+              className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
+            >
+              PnL Calculator
+            </Link>
           </nav>
         </aside>
         <main className="flex-1 p-8 overflow-auto">{children}</main>
