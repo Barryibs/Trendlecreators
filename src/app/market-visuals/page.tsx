@@ -71,7 +71,6 @@ export default function MarketVisualsPage() {
   const tradeUrl = `https://trendle.fi/${selectedMarket.slug}`;
   const screenshotSrc = `/screenshots/${selectedMarket.slug}.png`;
 
-  // Check if screenshot exists when market changes
   useEffect(() => {
     setImageExists(false);
     const img = new Image();
@@ -128,7 +127,7 @@ export default function MarketVisualsPage() {
     <div>
       <h2 className="text-2xl font-bold mb-2">Market Visuals</h2>
       <p className="text-sm text-muted-foreground mb-6">
-        Select a market to get a shareable visual from Trendle to post under tweets.
+        Select a market to generate a shareable visual for tweets.
       </p>
 
       {/* Controls */}
@@ -174,7 +173,7 @@ export default function MarketVisualsPage() {
         </div>
       </div>
 
-      {/* Visual display */}
+      {/* Visual */}
       {imageExists ? (
         <>
           <div className="flex gap-2 mb-4">
@@ -207,47 +206,79 @@ export default function MarketVisualsPage() {
               background: "#09090b",
               borderRadius: "20px",
               overflow: "hidden",
-              maxWidth: "440px",
+              maxWidth: "480px",
               fontFamily: "system-ui, -apple-system, sans-serif",
             }}
           >
+            {/* Market card screenshot */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={screenshotSrc}
-              alt={`${selectedMarket.name} attention market on Trendle`}
+              alt={`${selectedMarket.name} attention market`}
               style={{ width: "100%", display: "block" }}
             />
+
+            {/* UP / DOWN buttons */}
+            <div style={{ display: "flex", gap: "10px", padding: "12px 16px" }}>
+              <div
+                style={{
+                  flex: 1,
+                  background: "rgba(34,197,94,0.15)",
+                  border: "1px solid rgba(34,197,94,0.4)",
+                  borderRadius: "12px",
+                  padding: "12px",
+                  textAlign: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <div style={{ color: "#22c55e", fontWeight: 700, fontSize: "16px" }}>Up</div>
+                <div style={{ color: "#4ade80", fontSize: "11px", marginTop: "2px" }}>Attention Rising</div>
+              </div>
+              <div
+                style={{
+                  flex: 1,
+                  background: "rgba(239,68,68,0.15)",
+                  border: "1px solid rgba(239,68,68,0.4)",
+                  borderRadius: "12px",
+                  padding: "12px",
+                  textAlign: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <div style={{ color: "#ef4444", fontWeight: 700, fontSize: "16px" }}>Down</div>
+                <div style={{ color: "#f87171", fontSize: "11px", marginTop: "2px" }}>Attention Fading</div>
+              </div>
+            </div>
+
+            {/* Footer: Trendle branding + trade link */}
             <div
               style={{
-                padding: "16px 20px",
+                padding: "12px 16px 16px",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                borderTop: "1px solid rgba(63,63,70,0.5)",
+                borderTop: "1px solid rgba(63,63,70,0.4)",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <div
                   style={{
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "8px",
+                    width: "24px",
+                    height: "24px",
+                    borderRadius: "6px",
                     background: "linear-gradient(135deg, #6366f1, #818cf8)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     fontWeight: 800,
                     color: "#fff",
-                    fontSize: "14px",
+                    fontSize: "12px",
                   }}
                 >
                   T
                 </div>
-                <span style={{ color: "#ffffff", fontWeight: 700, fontSize: "15px" }}>
-                  Trendle
-                </span>
-                <span style={{ color: "#52525b", fontSize: "12px" }}>
-                  Attention Markets
+                <span style={{ color: "#a1a1aa", fontSize: "13px" }}>
+                  trendle.fi/{selectedMarket.slug}
                 </span>
               </div>
               <div
@@ -266,7 +297,7 @@ export default function MarketVisualsPage() {
           </div>
 
           {/* Tweet text */}
-          <div className="mt-4 bg-card rounded-xl border border-border p-4" style={{ maxWidth: "440px" }}>
+          <div className="mt-4 bg-card rounded-xl border border-border p-4" style={{ maxWidth: "480px" }}>
             <p className="text-sm text-muted-foreground mb-2">Tweet text:</p>
             <div className="flex items-center gap-2">
               <code className="flex-1 text-sm bg-muted px-3 py-2 rounded-lg block whitespace-pre-wrap">
@@ -287,7 +318,7 @@ export default function MarketVisualsPage() {
             No screenshot available for {selectedMarket.name} yet.
           </p>
           <p className="text-muted-foreground text-xs mt-2">
-            Run <code className="bg-muted px-1.5 py-0.5 rounded">npx tsx scripts/capture-markets.ts</code> to capture market screenshots.
+            Run <code className="bg-muted px-1.5 py-0.5 rounded">npx tsx scripts/capture-market-cards.ts</code> to capture.
           </p>
         </div>
       )}
