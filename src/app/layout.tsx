@@ -71,6 +71,12 @@ export default function RootLayout({
             >
               Timeline & Upcoming
             </Link>
+            <Link
+              href="/market-visuals"
+              className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
+            >
+              Market Visuals
+            </Link>
           </nav>
         </aside>
         <main className="flex-1 p-8 overflow-auto">{children}</main>
