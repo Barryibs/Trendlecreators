@@ -4,12 +4,29 @@ import { prisma } from "@/lib/db";
 const MIN_PAYOUT = 200;
 const MAX_PAYOUT = 500;
 
+// March 2026 only
+const PERIOD_START = new Date("2026-03-01T00:00:00Z");
+const PERIOD_END = new Date("2026-04-01T00:00:00Z");
+const PERIOD_LABEL = "March 2026";
+
 export async function GET() {
   const creators = await prisma.creator.findMany({
     include: {
-      tweets: true,
-      interactions: true,
-      referrals: true,
+      tweets: {
+        where: {
+          postedAt: { gte: PERIOD_START, lt: PERIOD_END },
+        },
+      },
+      interactions: {
+        where: {
+          detectedAt: { gte: PERIOD_START, lt: PERIOD_END },
+        },
+      },
+      referrals: {
+        where: {
+          createdAt: { gte: PERIOD_START, lt: PERIOD_END },
+        },
+      },
     },
   });
 
@@ -32,12 +49,6 @@ export async function GET() {
       0
     );
 
-    // Weighted contribution score
-    // - Impressions on trendle posts (reach)
-    // - Engagement on trendle posts (quality)
-    // - Number of trendle mentions (consistency)
-    // - Interactions with @trendlefi posts (support)
-    // - Referrals and volume (direct business impact)
     const score =
       totalImpressions * 1 +
       totalEngagement * 10 +
@@ -60,38 +71,38 @@ export async function GET() {
       referralCount,
       referralVolume: Math.round(referralVolume * 100) / 100,
       score,
-      payout: 0, // calculated below
+      payout: 0,
     };
   });
 
-  // Filter out creators with zero contribution
   const active = allocations.filter((a) => a.score > 0);
   const inactive = allocations.filter((a) => a.score === 0);
 
   if (active.length === 0) {
     return NextResponse.json({
       allocations: allocations.map((a) => ({ ...a, payout: 0 })),
+      period: PERIOD_LABEL,
       totalBudget: 0,
       totalAllocated: 0,
+      activeCreators: 0,
+      inactiveCreators: allocations.length,
     });
   }
 
-  // Normalize scores and map to payout range
   const maxScore = Math.max(...active.map((a) => a.score));
   const minScore = Math.min(...active.map((a) => a.score));
 
   for (const a of active) {
     if (maxScore === minScore) {
-      // Everyone gets the same if all scores are equal
       a.payout = Math.round((MIN_PAYOUT + MAX_PAYOUT) / 2);
     } else {
-      // Linear interpolation between MIN and MAX based on score rank
       const normalized = (a.score - minScore) / (maxScore - minScore);
-      a.payout = Math.round(MIN_PAYOUT + normalized * (MAX_PAYOUT - MIN_PAYOUT));
+      a.payout = Math.round(
+        MIN_PAYOUT + normalized * (MAX_PAYOUT - MIN_PAYOUT)
+      );
     }
   }
 
-  // Sort by payout descending
   const sorted = [
     ...active.sort((a, b) => b.payout - a.payout),
     ...inactive.map((a) => ({ ...a, payout: 0 })),
@@ -101,6 +112,7 @@ export async function GET() {
 
   return NextResponse.json({
     allocations: sorted,
+    period: PERIOD_LABEL,
     totalBudget: `$${MIN_PAYOUT}-$${MAX_PAYOUT} per creator`,
     totalAllocated,
     activeCreators: active.length,

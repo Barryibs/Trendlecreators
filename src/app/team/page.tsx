@@ -21,6 +21,7 @@ interface Allocation {
 
 interface AllocationsData {
   allocations: Allocation[];
+  period: string;
   totalBudget: string;
   totalAllocated: number;
   activeCreators: number;
@@ -111,8 +112,11 @@ export default function TeamPage() {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-2">Trendle Team - Creator Payouts</h2>
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="text-sm text-muted-foreground mb-1">
         Fair allocation based on each creator&apos;s contributions: impressions, engagement, Trendle mentions, interactions with @trendlefi posts, and referrals.
+      </p>
+      <p className="text-sm font-semibold text-primary mb-6">
+        Period: {data.period}
       </p>
 
       {/* Summary cards */}
