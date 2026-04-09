@@ -422,7 +422,7 @@ export default function TeamPage() {
         <h4 className="text-sm font-semibold mb-3">Allocation Formula</h4>
         <p className="text-xs text-muted-foreground leading-relaxed">
           <span className="block font-mono bg-muted px-2 py-1.5 rounded text-xs">
-            Score = Impressions&times;1 + Engagement&times;10 + Trendle&nbsp;Posts&times;500 + Interactions&times;200 + Referrals&times;100 + Referred&nbsp;Volume&times;5
+            Score = Impressions&times;10 + Trendle&nbsp;Posts&times;1000 + Engagement&times;5 + Interactions&times;200 + Referrals&times;100 + Referred&nbsp;Volume&times;3
           </span>
           <span className="block mt-2">
             Scores linearly mapped to $200-$500. Top scorer = $500, lowest active = $200, zero contribution = $0.

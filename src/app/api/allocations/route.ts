@@ -44,12 +44,12 @@ function computeScore(stats: {
   volume: number;
 }) {
   return (
-    stats.impressions * 1 +
-    stats.engagement * 10 +
-    stats.mentions * 500 +
+    stats.impressions * 10 +
+    stats.mentions * 1000 +
+    stats.engagement * 5 +
     stats.interactions * 200 +
     stats.referrals * 100 +
-    stats.volume * 5
+    stats.volume * 3
   );
 }
 
