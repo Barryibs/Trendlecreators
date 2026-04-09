@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
     await page.goto(`https://trendle.fi/${slug}`, {
       waitUntil: "networkidle2",
-      timeout: 20000,
+      timeout: 60000,
     });
 
     // Wait for chart to render
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     // Capture just the top portion with chart (crop out bottom nav/tweets)
     const screenshot = await page.screenshot({
       type: "png",
-      clip: { x: 0, y: 0, width: 860, height: 900 },
+      clip: { x: 0, y: 0, width: 430, height: 520 },
     });
 
     await browser.close();
