@@ -18,13 +18,6 @@ import { StatCard } from "@/components/stat-card";
 import { ImpressionsChart } from "@/components/impressions-chart";
 import type { DashboardStats } from "@/types";
 
-const CHART_COLORS = [
-  "#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6",
-  "#06b6d4", "#ec4899", "#14b8a6", "#f97316", "#84cc16",
-  "#a855f7", "#0ea5e9", "#e11d48", "#10b981", "#eab308",
-  "#7c3aed", "#2563eb", "#dc2626",
-];
-
 function formatNum(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
   if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
@@ -60,20 +53,10 @@ interface ReferralTrend {
   byCreator: Record<string, { count: number; volume: number }>;
 }
 
-interface AllocationEntry {
-  id: string;
-  username: string;
-  displayName: string;
-  profileImage: string | null;
-  score: number;
-  score10: number;
-}
-
 interface TeamData {
   monthlyTotals: MonthlyTotal[];
   creatorMonthly: CreatorMonthly[];
   referralTrends: ReferralTrend[];
-  allocations: AllocationEntry[];
 }
 
 export default function DashboardPage() {
@@ -159,36 +142,9 @@ export default function DashboardPage() {
         <StatCard label="Referred Volume" value={"$" + (stats.totalReferredVolume || 0).toFixed(2)} />
       </div>
 
-      {/* Weekly impressions + Top creators */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2">
-          <ImpressionsChart data={stats.impressionsOverTime} />
-        </div>
-        <div className="bg-card rounded-xl border border-border p-6">
-          <h3 className="text-sm font-semibold mb-4">Top Creators</h3>
-          <div className="flex flex-col gap-3">
-            {stats.topCreators.length === 0 && (
-              <p className="text-sm text-muted-foreground">No creators added yet.</p>
-            )}
-            {stats.topCreators.map((c, i) => (
-              <Link
-                key={c.id}
-                href={`/creators/${c.id}`}
-                className="flex items-center gap-3 hover:bg-muted rounded-lg px-2 py-1 -mx-2 transition-colors"
-              >
-                <span className="text-xs text-muted-foreground w-5">{i + 1}.</span>
-                {c.profileImage && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={c.profileImage} alt={c.username} className="w-7 h-7 rounded-full" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">@{c.username}</p>
-                </div>
-                <span className="text-sm font-semibold">{formatNum(c.totalImpressions)}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
+      {/* Weekly impressions */}
+      <div className="mb-8">
+        <ImpressionsChart data={stats.impressionsOverTime} />
       </div>
 
       {/* ===== Program Performance by Month ===== */}
@@ -366,34 +322,6 @@ export default function DashboardPage() {
         </>
       )}
 
-      {/* ===== Creator Comparison - Score /10 ===== */}
-      {teamData && teamData.allocations && teamData.allocations.filter((a) => a.score > 0).length > 0 && (
-        <>
-          <h3 className="text-lg font-semibold mb-4">Creator Comparison - Score /10</h3>
-          <div className="bg-card rounded-xl border border-border p-5 mb-10">
-            <ResponsiveContainer width="100%" height={Math.max(300, teamData.allocations.filter((a) => a.score > 0).length * 36)}>
-              <BarChart
-                data={teamData.allocations.filter((a) => a.score > 0)}
-                layout="vertical"
-                margin={{ left: 100 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis type="number" tick={{ fontSize: 11 }} domain={[0, 10]} />
-                <YAxis type="category" dataKey="username" tick={{ fontSize: 12 }} tickFormatter={(v) => `@${v}`} width={100} />
-                <Tooltip formatter={(v) => Number(v).toFixed(1) + " / 10"} />
-                <Bar dataKey="score10" name="Score /10" fill="#6366f1" radius={[0, 4, 4, 0]}>
-                  {teamData.allocations
-                    .filter((a) => a.score > 0)
-                    .map((_, i) => (
-                      <rect key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </>
-      )}
-
       {/* ===== Creator Performance by Month ===== */}
       {teamData && teamData.creatorMonthly.length > 0 && (
         <>
@@ -492,6 +420,53 @@ export default function DashboardPage() {
               </>
             );
           })()}
+        </>
+      )}
+
+      {/* ===== All Creators ===== */}
+      {stats.topCreators.length > 0 && (
+        <>
+          <h3 className="text-lg font-semibold mb-4">All Creators</h3>
+          <div className="bg-card rounded-xl border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="text-left px-4 py-3 font-semibold">#</th>
+                  <th className="text-left px-4 py-3 font-semibold">Creator</th>
+                  <th className="text-right px-4 py-3 font-semibold">Impressions</th>
+                  <th className="text-right px-4 py-3 font-semibold">Engagement</th>
+                  <th className="text-right px-4 py-3 font-semibold">Trendle Posts</th>
+                  <th className="text-right px-4 py-3 font-semibold">Interactions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.topCreators.map((c, i) => (
+                  <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                    <td className="px-4 py-3 text-muted-foreground">{i + 1}</td>
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/creators/${c.id}`}
+                        className="flex items-center gap-2 hover:underline"
+                      >
+                        {c.profileImage && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={c.profileImage} alt="" className="w-6 h-6 rounded-full" />
+                        )}
+                        <div>
+                          <div className="font-medium">{c.displayName}</div>
+                          <div className="text-xs text-muted-foreground">@{c.username}</div>
+                        </div>
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-right">{formatNum(c.totalImpressions)}</td>
+                    <td className="px-4 py-3 text-right">{formatNum(c.totalEngagement)}</td>
+                    <td className="px-4 py-3 text-right">{c.trendleMentions}</td>
+                    <td className="px-4 py-3 text-right">{c.interactionCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </div>
