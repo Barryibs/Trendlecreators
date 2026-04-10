@@ -45,6 +45,7 @@ const MARKETS: TrendleMarket[] = [
   { name: "Looksmaxxing", slug: "looksmaxxing", category: "other" },
   { name: "Iran", slug: "iran", category: "other" },
   { name: "Jeffrey Epstein", slug: "jeffrey-epstein", category: "other" },
+  { name: "World Cup", slug: "world-cup", category: "entertainment" },
 ];
 
 const CATEGORIES = [

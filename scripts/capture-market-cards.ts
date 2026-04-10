@@ -25,7 +25,7 @@ async function main() {
 
   await page.goto("https://trendle.fi/", {
     waitUntil: "networkidle2",
-    timeout: 60000,
+    timeout: 120000,
   });
   await new Promise((r) => setTimeout(r, 3000));
 
