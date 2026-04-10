@@ -72,6 +72,15 @@ interface AllocationsData {
   monthlyTotals: MonthlyTotal[];
   creatorMonthly: CreatorMonthly[];
   monthlyPayouts: MonthlyPayout[];
+  allocationsByMonth: {
+    month: string;
+    label: string;
+    isCurrent: boolean;
+    allocations: Allocation[];
+    totalAllocated: number;
+    eligibleCreators: number;
+    ineligibleCreators: number;
+  }[];
   referralTrends: {
     month: string;
     label: string;
@@ -102,6 +111,7 @@ export default function TeamPage() {
   const [data, setData] = useState<AllocationsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
+  const [payoutMonth, setPayoutMonth] = useState<string | null>(null);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -486,125 +496,134 @@ export default function TeamPage() {
       </div>
 
       {/* ===== SECTION 4: Payout Allocation ===== */}
-      <h3 className="text-lg font-semibold mb-2">Payout Allocation</h3>
-      <p className="text-sm text-muted-foreground mb-1">
-        Based on {data.period} contributions only.
-      </p>
-      <p className="text-sm font-semibold text-primary mb-4">
-        Range: {data.totalBudget}
-      </p>
+      <h3 className="text-lg font-semibold mb-4">Payout Allocation</h3>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-card rounded-xl border border-border p-5">
-          <div className="text-sm text-muted-foreground">Total Allocated</div>
-          <div className="text-2xl font-bold mt-1">${data.totalAllocated.toLocaleString()}</div>
-        </div>
-        <div className="bg-card rounded-xl border border-border p-5">
-          <div className="text-sm text-muted-foreground">Eligible</div>
-          <div className="text-2xl font-bold mt-1 text-success">{data.eligibleCreators}</div>
-        </div>
-        <div className="bg-card rounded-xl border border-border p-5">
-          <div className="text-sm text-muted-foreground">Not Eligible</div>
-          <div className="text-2xl font-bold mt-1 text-destructive">{data.ineligibleCreators}</div>
-        </div>
-        <div className="bg-card rounded-xl border border-border p-5">
-          <div className="text-sm text-muted-foreground">Avg Payout</div>
-          <div className="text-2xl font-bold mt-1">
-            ${data.eligibleCreators > 0 ? Math.round(data.totalAllocated / data.eligibleCreators) : 0}
-          </div>
-        </div>
-      </div>
+      {/* Month tabs */}
+      {data.allocationsByMonth.length > 0 && (() => {
+        const activeMonth = payoutMonth
+          ? data.allocationsByMonth.find((m) => m.month === payoutMonth)
+          : data.allocationsByMonth.find((m) => !m.isCurrent) || data.allocationsByMonth[0];
+        if (!activeMonth) return null;
+        const am = activeMonth;
 
+        return (
+          <>
+            <div className="flex gap-2 mb-4">
+              {data.allocationsByMonth.map((m) => (
+                <button
+                  key={m.month}
+                  onClick={() => setPayoutMonth(m.month)}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    am.month === m.month
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted hover:bg-border"
+                  }`}
+                >
+                  {m.isCurrent ? `${m.label} (Current)` : m.label}
+                </button>
+              ))}
+            </div>
 
-      {/* Formula */}
-      <div className="bg-card rounded-xl border border-border p-5 mb-6">
-        <h4 className="text-sm font-semibold mb-3">Allocation Formula</h4>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          <span className="block font-mono bg-muted px-2 py-1.5 rounded text-xs">
-            Score = Impressions&times;10 + Trendle&nbsp;Posts&times;1000 + Engagement&times;5 + Interactions&times;200 + Referrals&times;100 + Referred&nbsp;Volume&times;3
-          </span>
-          <span className="block mt-2">
-            Scores linearly mapped to $200-$500. Top scorer = $500, lowest active = $200, zero contribution = $0.
-          </span>
-        </p>
-      </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-card rounded-xl border border-border p-5">
+                <div className="text-sm text-muted-foreground">Total Allocated</div>
+                <div className="text-2xl font-bold mt-1">${am.totalAllocated.toLocaleString()}</div>
+              </div>
+              <div className="bg-card rounded-xl border border-border p-5">
+                <div className="text-sm text-muted-foreground">Eligible</div>
+                <div className="text-2xl font-bold mt-1 text-success">{am.eligibleCreators}</div>
+              </div>
+              <div className="bg-card rounded-xl border border-border p-5">
+                <div className="text-sm text-muted-foreground">Not Eligible</div>
+                <div className="text-2xl font-bold mt-1 text-destructive">{am.ineligibleCreators}</div>
+              </div>
+              <div className="bg-card rounded-xl border border-border p-5">
+                <div className="text-sm text-muted-foreground">Avg Payout</div>
+                <div className="text-2xl font-bold mt-1">
+                  ${am.eligibleCreators > 0 ? Math.round(am.totalAllocated / am.eligibleCreators) : 0}
+                </div>
+              </div>
+            </div>
 
-      {/* Payout table */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/50">
-              <th className="text-left px-4 py-3 font-semibold">#</th>
-              <th className="text-left px-4 py-3 font-semibold">Creator</th>
-              <th className="text-right px-4 py-3 font-semibold">Trendle Posts</th>
-              <th className="text-right px-4 py-3 font-semibold">Impressions</th>
-              <th className="text-right px-4 py-3 font-semibold">Engagement</th>
-              <th className="text-right px-4 py-3 font-semibold">Interactions</th>
-              <th className="text-right px-4 py-3 font-semibold">Referrals</th>
-              <th className="text-right px-4 py-3 font-semibold">Ref. Volume</th>
-              <th className="text-right px-4 py-3 font-semibold">Score /10</th>
-              <th className="text-center px-4 py-3 font-semibold">Eligible</th>
-              <th className="text-right px-4 py-3 font-semibold">Payout</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.allocations.map((a, i) => (
-              <tr key={a.id} className={`border-b border-border last:border-0 ${a.payout === 0 ? "opacity-50" : ""}`}>
-                <td className="px-4 py-3 text-muted-foreground">{i + 1}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    {a.profileImage && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={a.profileImage} alt="" className="w-6 h-6 rounded-full" />
-                    )}
-                    <div>
-                      <div className="font-medium">{a.displayName}</div>
-                      <div className="text-xs text-muted-foreground">@{a.username}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-right">{a.trendleMentions}</td>
-                <td className="px-4 py-3 text-right">{formatNum(a.totalImpressions)}</td>
-                <td className="px-4 py-3 text-right">{formatNum(a.totalEngagement)}</td>
-                <td className="px-4 py-3 text-right">{a.interactionCount}</td>
-                <td className="px-4 py-3 text-right">{a.referralCount}</td>
-                <td className="px-4 py-3 text-right">{a.referralVolume > 0 ? `$${formatNum(a.referralVolume)}` : "-"}</td>
-                <td className="px-4 py-3 text-right font-semibold">{a.score10.toFixed(1)}</td>
-                <td className="px-4 py-3 text-center">
-                  {a.isExcluded ? (
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Excluded</span>
-                  ) : a.isEligible ? (
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">Yes</span>
-                  ) : (
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">No activity</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {a.payout > 0 ? (
-                    <span className="font-bold text-success">${a.payout}</span>
-                  ) : (
-                    <span className="text-muted-foreground">$0</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="bg-muted/50 font-semibold">
-              <td className="px-4 py-3" colSpan={2}>Total</td>
-              <td className="px-4 py-3 text-right">{data.allocations.reduce((s, a) => s + a.trendleMentions, 0)}</td>
-              <td className="px-4 py-3 text-right">{formatNum(data.allocations.reduce((s, a) => s + a.totalImpressions, 0))}</td>
-              <td className="px-4 py-3 text-right">{formatNum(data.allocations.reduce((s, a) => s + a.totalEngagement, 0))}</td>
-              <td className="px-4 py-3 text-right">{data.allocations.reduce((s, a) => s + a.interactionCount, 0)}</td>
-              <td className="px-4 py-3 text-right">{data.allocations.reduce((s, a) => s + a.referralCount, 0)}</td>
-              <td className="px-4 py-3 text-right">${formatNum(data.allocations.reduce((s, a) => s + a.referralVolume, 0))}</td>
-              <td className="px-4 py-3 text-right">-</td>
-              <td className="px-4 py-3 text-center">{data.eligibleCreators}/{data.allocations.length}</td>
-              <td className="px-4 py-3 text-right text-success">${data.totalAllocated.toLocaleString()}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+            {/* Payout table */}
+            <div className="bg-card rounded-xl border border-border overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="text-left px-4 py-3 font-semibold">#</th>
+                    <th className="text-left px-4 py-3 font-semibold">Creator</th>
+                    <th className="text-right px-4 py-3 font-semibold">Trendle Posts</th>
+                    <th className="text-right px-4 py-3 font-semibold">Impressions</th>
+                    <th className="text-right px-4 py-3 font-semibold">Engagement</th>
+                    <th className="text-right px-4 py-3 font-semibold">Interactions</th>
+                    <th className="text-right px-4 py-3 font-semibold">Referrals</th>
+                    <th className="text-right px-4 py-3 font-semibold">Ref. Volume</th>
+                    <th className="text-right px-4 py-3 font-semibold">Score /10</th>
+                    <th className="text-center px-4 py-3 font-semibold">Eligible</th>
+                    <th className="text-right px-4 py-3 font-semibold">Payout</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {am.allocations.map((a, i) => (
+                    <tr key={a.id} className={`border-b border-border last:border-0 ${a.payout === 0 ? "opacity-50" : ""}`}>
+                      <td className="px-4 py-3 text-muted-foreground">{i + 1}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {a.profileImage && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={a.profileImage} alt="" className="w-6 h-6 rounded-full" />
+                          )}
+                          <div>
+                            <div className="font-medium">{a.displayName}</div>
+                            <div className="text-xs text-muted-foreground">@{a.username}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">{a.trendleMentions}</td>
+                      <td className="px-4 py-3 text-right">{formatNum(a.totalImpressions)}</td>
+                      <td className="px-4 py-3 text-right">{formatNum(a.totalEngagement)}</td>
+                      <td className="px-4 py-3 text-right">{a.interactionCount}</td>
+                      <td className="px-4 py-3 text-right">{a.referralCount}</td>
+                      <td className="px-4 py-3 text-right">{a.referralVolume > 0 ? `$${formatNum(a.referralVolume)}` : "-"}</td>
+                      <td className="px-4 py-3 text-right font-semibold">{a.score10.toFixed(1)}</td>
+                      <td className="px-4 py-3 text-center">
+                        {a.isExcluded ? (
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Excluded</span>
+                        ) : a.isEligible ? (
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">Yes</span>
+                        ) : (
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">No activity</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {a.payout > 0 ? (
+                          <span className="font-bold text-success">${a.payout}</span>
+                        ) : (
+                          <span className="text-muted-foreground">$0</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-muted/50 font-semibold">
+                    <td className="px-4 py-3" colSpan={2}>Total</td>
+                    <td className="px-4 py-3 text-right">{am.allocations.reduce((s, a) => s + a.trendleMentions, 0)}</td>
+                    <td className="px-4 py-3 text-right">{formatNum(am.allocations.reduce((s, a) => s + a.totalImpressions, 0))}</td>
+                    <td className="px-4 py-3 text-right">{formatNum(am.allocations.reduce((s, a) => s + a.totalEngagement, 0))}</td>
+                    <td className="px-4 py-3 text-right">{am.allocations.reduce((s, a) => s + a.interactionCount, 0)}</td>
+                    <td className="px-4 py-3 text-right">{am.allocations.reduce((s, a) => s + a.referralCount, 0)}</td>
+                    <td className="px-4 py-3 text-right">${formatNum(am.allocations.reduce((s, a) => s + a.referralVolume, 0))}</td>
+                    <td className="px-4 py-3 text-right">-</td>
+                    <td className="px-4 py-3 text-center">{am.eligibleCreators}/{am.allocations.length}</td>
+                    <td className="px-4 py-3 text-right text-success">${am.totalAllocated.toLocaleString()}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </>
+        );
+      })()}
 
       {/* ===== SECTION 5: Monthly Payout History ===== */}
       {data.monthlyPayouts.length > 0 && (

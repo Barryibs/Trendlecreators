@@ -227,8 +227,29 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  // Current month allocation (latest payout month) for the detailed table
-  const latestPayoutMonth = payoutMonths[payoutMonths.length - 1] || "2026-03";
+  // Current month allocation - use the latest *completed* month (not current month)
+  const now = new Date();
+  const currentYm = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+  const completedPayoutMonths = payoutMonths.filter((ym) => ym < currentYm);
+  const latestPayoutMonth = completedPayoutMonths.length > 0
+    ? completedPayoutMonths[completedPayoutMonths.length - 1]
+    : payoutMonths[0] || "2026-03";
+  // Compute allocations for each payout month (for tab switching)
+  const allocationsByMonth = payoutMonths.map((ym) => {
+    const allocs = computeMonthAllocation(creators as CreatorData[], ym);
+    const total = allocs.reduce((s, a) => s + a.payout, 0);
+    const elig = allocs.filter((a) => a.payout > 0);
+    return {
+      month: ym,
+      label: getMonthLabel(ym),
+      isCurrent: ym === currentYm,
+      allocations: allocs,
+      totalAllocated: total,
+      eligibleCreators: elig.length,
+      ineligibleCreators: allocs.length - elig.length,
+    };
+  });
+
   const currentAllocations = computeMonthAllocation(creators as CreatorData[], latestPayoutMonth);
   const totalAllocated = currentAllocations.reduce((s, a) => s + a.payout, 0);
   const eligible = currentAllocations.filter((a) => a.payout > 0);
@@ -271,5 +292,6 @@ export async function GET(req: NextRequest) {
     creatorMonthly: creatorMonthly.filter((c) => c.months.some((m) => m.score > 0)),
     monthlyPayouts,
     referralTrends: referralTrends.filter((r) => r.signups > 0),
+    allocationsByMonth,
   });
 }

@@ -10,12 +10,13 @@ import {
 
 const TRENDLE_KEYWORDS = [
   "trendle",
-  "@trendlefi",
   "trendlefi",
   "trendle.fi",
   "trendlemaxx",
   "trendlemaxxx",
   "trendlemaxxing",
+  "attentionfi",
+  "#trendle",
 ];
 
 function mentionsTrendle(text: string): boolean {
