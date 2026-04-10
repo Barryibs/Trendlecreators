@@ -433,23 +433,6 @@ export default function TeamPage() {
         </div>
       </div>
 
-      {/* Minimum requirements */}
-      <div className="bg-card rounded-xl border border-border p-5 mb-6">
-        <h4 className="text-sm font-semibold mb-3">Minimum Requirements for Payout</h4>
-        <div className="text-xs text-muted-foreground space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="text-success">&#10003;</span>
-            <span>At least 1 piece of content per week about Trendle (posts, articles, videos, quote tweets)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-success">&#10003;</span>
-            <span>Support Trendle&apos;s main account content (likes, retweets, comments on @trendlefi posts)</span>
-          </div>
-          <div className="mt-2 text-muted-foreground">
-            Creators who don&apos;t meet both requirements receive $0 regardless of score.
-          </div>
-        </div>
-      </div>
 
       {/* Formula */}
       <div className="bg-card rounded-xl border border-border p-5 mb-6">
