@@ -29,12 +29,8 @@ interface Allocation {
   referralVolume: number;
   score: number;
   score10: number;
-  weeksWithPosts: number;
-  totalWeeks: number;
-  meetsContentReq: boolean;
-  meetsEngagementReq: boolean;
-  meetsMinimum: boolean;
   isExcluded: boolean;
+  isEligible: boolean;
   payout: number;
 }
 
@@ -63,7 +59,7 @@ interface MonthlyPayout {
   label: string;
   totalPayout: number;
   eligibleCount: number;
-  creatorPayouts: { username: string; displayName: string; payout: number; score10: number; meetsMinimum: boolean }[];
+  creatorPayouts: { username: string; displayName: string; payout: number; score10: number; isEligible: boolean }[];
 }
 
 interface AllocationsData {
@@ -481,27 +477,20 @@ export default function TeamPage() {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <span className={a.meetsContentReq ? "" : "text-destructive"}>{a.trendleMentions}</span>
-                  <span className="text-xs text-muted-foreground ml-1">({a.weeksWithPosts}/{a.totalWeeks}w)</span>
-                </td>
+                <td className="px-4 py-3 text-right">{a.trendleMentions}</td>
                 <td className="px-4 py-3 text-right">{formatNum(a.totalImpressions)}</td>
                 <td className="px-4 py-3 text-right">{formatNum(a.totalEngagement)}</td>
-                <td className="px-4 py-3 text-right">
-                  <span className={a.meetsEngagementReq ? "" : "text-destructive"}>{a.interactionCount}</span>
-                </td>
+                <td className="px-4 py-3 text-right">{a.interactionCount}</td>
                 <td className="px-4 py-3 text-right">{a.referralCount}</td>
                 <td className="px-4 py-3 text-right">{a.referralVolume > 0 ? `$${formatNum(a.referralVolume)}` : "-"}</td>
                 <td className="px-4 py-3 text-right font-semibold">{a.score10.toFixed(1)}</td>
                 <td className="px-4 py-3 text-center">
                   {a.isExcluded ? (
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Excluded</span>
-                  ) : a.meetsMinimum ? (
+                  ) : a.isEligible ? (
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">Yes</span>
                   ) : (
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">
-                      {!a.meetsContentReq && !a.meetsEngagementReq ? "No posts/engagement" : !a.meetsContentReq ? "Missing weekly posts" : "No engagement"}
-                    </span>
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">No activity</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">

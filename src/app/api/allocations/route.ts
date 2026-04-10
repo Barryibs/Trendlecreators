@@ -47,22 +47,6 @@ function getPayoutMonths(): string[] {
   return getAllMonths().filter((ym) => ym >= "2026-03");
 }
 
-function getWeeksInMonth(yearMonth: string) {
-  const { start, end } = getMonthRange(yearMonth);
-  const weeks: { start: Date; end: Date }[] = [];
-  const cur = new Date(start);
-  while (cur < end) {
-    const weekEnd = new Date(cur);
-    weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
-    weeks.push({
-      start: new Date(cur),
-      end: weekEnd > end ? end : weekEnd,
-    });
-    cur.setUTCDate(cur.getUTCDate() + 7);
-  }
-  return weeks;
-}
-
 function computeScore(stats: {
   impressions: number;
   engagement: number;
@@ -97,7 +81,6 @@ function computeMonthAllocation(
   yearMonth: string
 ) {
   const { start, end } = getMonthRange(yearMonth);
-  const weeksInMonth = getWeeksInMonth(yearMonth);
 
   const allocations = creators.map((c) => {
     const isExcluded = EXCLUDED_USERNAMES.includes(c.username);
@@ -125,12 +108,7 @@ function computeMonthAllocation(
       volume: referralVolume,
     });
 
-    const weeksWithPosts = weeksInMonth.filter((week) =>
-      tweets.some((t) => t.postedAt >= week.start && t.postedAt < week.end)
-    ).length;
-    const meetsContentReq = weeksWithPosts >= weeksInMonth.length;
-    const meetsEngagementReq = ints.length > 0;
-    const meetsMinimum = !isExcluded && meetsContentReq && meetsEngagementReq;
+    const eligible = !isExcluded && score > 0;
 
     return {
       id: c.id,
@@ -146,19 +124,14 @@ function computeMonthAllocation(
       referralCount: refs.length,
       referralVolume: Math.round(referralVolume * 100) / 100,
       score,
-      weeksWithPosts,
-      totalWeeks: weeksInMonth.length,
-      meetsContentReq,
-      meetsEngagementReq,
-      meetsMinimum,
       isExcluded,
+      isEligible: eligible,
       payout: 0,
       score10: 0,
     };
   });
 
-  // Compute payouts for eligible creators
-  const eligible = allocations.filter((a) => a.meetsMinimum && a.score > 0);
+  const eligible = allocations.filter((a) => a.isEligible);
   const maxScore = eligible.length > 0 ? Math.max(...eligible.map((a) => a.score)) : 0;
   const minScore = eligible.length > 0 ? Math.min(...eligible.map((a) => a.score)) : 0;
 
@@ -178,8 +151,8 @@ function computeMonthAllocation(
   }
 
   const sorted = [
-    ...allocations.filter((a) => a.meetsMinimum && a.score > 0).sort((a, b) => b.payout - a.payout),
-    ...allocations.filter((a) => !a.meetsMinimum || a.score === 0).sort((a, b) => b.score - a.score),
+    ...allocations.filter((a) => a.isEligible).sort((a, b) => b.payout - a.payout),
+    ...allocations.filter((a) => !a.isEligible).sort((a, b) => b.score - a.score),
   ];
 
   return sorted;
@@ -249,7 +222,7 @@ export async function GET(req: NextRequest) {
         displayName: a.displayName,
         payout: a.payout,
         score10: a.score10,
-        meetsMinimum: a.meetsMinimum,
+        isEligible: a.isEligible,
       })),
     };
   });
