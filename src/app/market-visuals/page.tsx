@@ -119,7 +119,7 @@ export default function MarketVisualsPage() {
     if (!cardRef.current) return;
     const html2canvas = (await import("html2canvas-pro")).default;
     const canvas = await html2canvas(cardRef.current, {
-      backgroundColor: null,
+      backgroundColor: "#09090b",
       scale: 2,
       useCORS: true,
     });
@@ -133,7 +133,7 @@ export default function MarketVisualsPage() {
     if (!cardRef.current) return;
     const html2canvas = (await import("html2canvas-pro")).default;
     const canvas = await html2canvas(cardRef.current, {
-      backgroundColor: null,
+      backgroundColor: "#09090b",
       scale: 2,
       useCORS: true,
     });
@@ -277,7 +277,7 @@ export default function MarketVisualsPage() {
             <img
               src={screenshotUrl}
               alt={`${selectedMarket.name} attention market`}
-              style={{ width: "100%", display: "block" }}
+              style={{ width: "100%", display: "block", borderRadius: "20px 20px 0 0" }}
             />
 
             {/* UP / DOWN buttons */}
