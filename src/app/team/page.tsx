@@ -34,6 +34,7 @@ interface Allocation {
   meetsContentReq: boolean;
   meetsEngagementReq: boolean;
   meetsMinimum: boolean;
+  isExcluded: boolean;
   payout: number;
 }
 
@@ -57,6 +58,14 @@ interface CreatorMonthly {
   months: MonthlyTotal[];
 }
 
+interface MonthlyPayout {
+  month: string;
+  label: string;
+  totalPayout: number;
+  eligibleCount: number;
+  creatorPayouts: { username: string; displayName: string; payout: number; score10: number; meetsMinimum: boolean }[];
+}
+
 interface AllocationsData {
   allocations: Allocation[];
   period: string;
@@ -66,6 +75,7 @@ interface AllocationsData {
   ineligibleCreators: number;
   monthlyTotals: MonthlyTotal[];
   creatorMonthly: CreatorMonthly[];
+  monthlyPayouts: MonthlyPayout[];
 }
 
 function formatNum(n: number): string {
@@ -501,7 +511,9 @@ export default function TeamPage() {
                 <td className="px-4 py-3 text-right">{a.referralVolume > 0 ? `$${formatNum(a.referralVolume)}` : "-"}</td>
                 <td className="px-4 py-3 text-right font-semibold">{a.score10.toFixed(1)}</td>
                 <td className="px-4 py-3 text-center">
-                  {a.meetsMinimum ? (
+                  {a.isExcluded ? (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Excluded</span>
+                  ) : a.meetsMinimum ? (
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">Yes</span>
                   ) : (
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700">
@@ -535,6 +547,114 @@ export default function TeamPage() {
           </tfoot>
         </table>
       </div>
+
+      {/* ===== SECTION 5: Monthly Payout History ===== */}
+      {data.monthlyPayouts.length > 0 && (
+        <>
+          <h3 className="text-lg font-semibold mt-10 mb-4">Monthly Payout History</h3>
+
+          {/* Total payouts chart */}
+          <div className="bg-card rounded-xl border border-border p-5 mb-6">
+            <h4 className="text-sm font-semibold mb-4">Total Payouts by Month</h4>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={data.monthlyPayouts}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} tickFormatter={(v) => v.split(" ")[0]} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                <Tooltip formatter={(v) => `$${Number(v).toLocaleString()}`} />
+                <Bar dataKey="totalPayout" name="Total Payout" fill="#22c55e" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Monthly payout summary table */}
+          <div className="bg-card rounded-xl border border-border overflow-hidden mb-6">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="text-left px-4 py-3 font-semibold">Month</th>
+                  <th className="text-right px-4 py-3 font-semibold">Eligible</th>
+                  <th className="text-right px-4 py-3 font-semibold">Total Payout</th>
+                  <th className="text-right px-4 py-3 font-semibold">Avg Payout</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.monthlyPayouts.map((mp) => (
+                  <tr key={mp.month} className="border-b border-border last:border-0">
+                    <td className="px-4 py-3 font-medium">{mp.label}</td>
+                    <td className="px-4 py-3 text-right">{mp.eligibleCount}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-success">${mp.totalPayout.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right">${mp.eligibleCount > 0 ? Math.round(mp.totalPayout / mp.eligibleCount) : 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/50 font-semibold">
+                  <td className="px-4 py-3">All Time</td>
+                  <td className="px-4 py-3 text-right">-</td>
+                  <td className="px-4 py-3 text-right text-success">${data.monthlyPayouts.reduce((s, mp) => s + mp.totalPayout, 0).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-right">-</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          {/* Per-creator payout history table */}
+          <div className="bg-card rounded-xl border border-border overflow-hidden">
+            <h4 className="text-sm font-semibold px-4 pt-4 pb-2">Creator Payout History</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="text-left px-4 py-3 font-semibold sticky left-0 bg-muted/50">Creator</th>
+                    {data.monthlyPayouts.map((mp) => (
+                      <th key={mp.month} className="text-right px-4 py-3 font-semibold whitespace-nowrap">
+                        {mp.label.split(" ")[0]}
+                      </th>
+                    ))}
+                    <th className="text-right px-4 py-3 font-semibold">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    // Get all unique creators across all months
+                    const creatorNames = [...new Set(
+                      data.monthlyPayouts.flatMap((mp) => mp.creatorPayouts.map((cp) => cp.username))
+                    )];
+                    return creatorNames.map((username) => {
+                      const payouts = data.monthlyPayouts.map((mp) => {
+                        const cp = mp.creatorPayouts.find((c) => c.username === username);
+                        return cp?.payout || 0;
+                      });
+                      const total = payouts.reduce((s, p) => s + p, 0);
+                      if (total === 0 && payouts.every((p) => p === 0)) return null;
+                      const display = data.monthlyPayouts[0]?.creatorPayouts.find((c) => c.username === username);
+                      return (
+                        <tr key={username} className="border-b border-border last:border-0">
+                          <td className="px-4 py-3 font-medium sticky left-0 bg-card">
+                            @{username}
+                            <span className="text-xs text-muted-foreground ml-1">{display?.displayName}</span>
+                          </td>
+                          {payouts.map((p, i) => (
+                            <td key={i} className="px-4 py-3 text-right">
+                              {p > 0 ? (
+                                <span className="text-success font-medium">${p}</span>
+                              ) : (
+                                <span className="text-muted-foreground">$0</span>
+                              )}
+                            </td>
+                          ))}
+                          <td className="px-4 py-3 text-right font-bold">${total}</td>
+                        </tr>
+                      );
+                    }).filter(Boolean);
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
