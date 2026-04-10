@@ -145,7 +145,8 @@ function computeMonthAllocation(
       volume: referralVolume,
     }, yearMonth);
 
-    const eligible = !isExcluded && score > 0;
+    const minPosts = 4;
+    const eligible = !isExcluded && score > 0 && tweets.length >= minPosts;
 
     return {
       id: c.id,
