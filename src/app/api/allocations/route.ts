@@ -66,24 +66,27 @@ function computeScoreMarch(stats: {
   );
 }
 
-// April onward: 80% weight on referrals + impressions
+// April onward: 80% weight on impressions + active referrals (who traded) & volume
 function computeScoreApril(stats: {
   impressions: number;
   engagement: number;
   mentions: number;
   interactions: number;
   referrals: number;
+  activeReferrals: number;
   volume: number;
 }) {
-  // Referrals & impressions = 80% of score weight
-  const referralScore = stats.referrals * 500 + stats.volume * 20;
+  // 80% = impressions + active referrals (traded) + referred volume
   const impressionScore = stats.impressions * 50;
-  // Everything else = 20%
+  const activeRefScore = stats.activeReferrals * 1000;
+  const volumeScore = stats.volume * 20;
+  // 20% = posts, engagement, interactions, total signups
   const otherScore =
     stats.mentions * 200 +
     stats.engagement * 2 +
-    stats.interactions * 50;
-  return referralScore + impressionScore + otherScore;
+    stats.interactions * 50 +
+    stats.referrals * 50;
+  return impressionScore + activeRefScore + volumeScore + otherScore;
 }
 
 function computeScore(
@@ -93,6 +96,7 @@ function computeScore(
     mentions: number;
     interactions: number;
     referrals: number;
+    activeReferrals: number;
     volume: number;
   },
   yearMonth: string
@@ -136,12 +140,14 @@ function computeMonthAllocation(
       (s, t) => s + t.likes + t.retweets + t.replies + t.quotes, 0
     );
     const referralVolume = refs.reduce((s, r) => s + r.tradingVolume, 0);
+    const activeRefs = refs.filter((r) => r.tradingVolume > 0).length;
     const score = computeScore({
       impressions: totalImpressions,
       engagement: totalEngagement,
       mentions: tweets.length,
       interactions: ints.length,
       referrals: refs.length,
+      activeReferrals: activeRefs,
       volume: referralVolume,
     }, yearMonth);
 
@@ -207,7 +213,7 @@ export async function GET(req: NextRequest) {
   // Program-wide monthly totals
   const monthlyTotals = allMonths.map((ym) => {
     const { start, end } = getMonthRange(ym);
-    let impressions = 0, engagement = 0, mentions = 0, interactions = 0, referrals = 0, volume = 0;
+    let impressions = 0, engagement = 0, mentions = 0, interactions = 0, referrals = 0, activeReferrals = 0, volume = 0;
     for (const c of creators) {
       const tweets = c.tweets.filter((t) => t.mentionsTrendle && t.postedAt >= start && t.postedAt < end);
       impressions += tweets.reduce((s, t) => s + t.impressions, 0);
@@ -216,13 +222,14 @@ export async function GET(req: NextRequest) {
       interactions += c.interactions.filter((i) => i.detectedAt >= start && i.detectedAt < end).length;
       const refs = c.referrals.filter((r) => r.createdAt >= start && r.createdAt < end);
       referrals += refs.length;
+      activeReferrals += refs.filter((r) => r.tradingVolume > 0).length;
       volume += refs.reduce((s, r) => s + r.tradingVolume, 0);
     }
     return {
       month: ym, label: getMonthLabel(ym),
       impressions, engagement, mentions, interactions, referrals,
       volume: Math.round(volume * 100) / 100,
-      score: computeScore({ impressions, engagement, mentions, interactions, referrals, volume }, ym),
+      score: computeScore({ impressions, engagement, mentions, interactions, referrals, activeReferrals, volume }, ym),
     };
   });
 
@@ -240,7 +247,7 @@ export async function GET(req: NextRequest) {
         month: ym, label: getMonthLabel(ym), impressions, engagement,
         mentions: tweets.length, interactions: ints.length,
         referrals: refs.length, volume: Math.round(refVolume * 100) / 100,
-        score: computeScore({ impressions, engagement, mentions: tweets.length, interactions: ints.length, referrals: refs.length, volume: refVolume }, ym),
+        score: computeScore({ impressions, engagement, mentions: tweets.length, interactions: ints.length, referrals: refs.length, activeReferrals: refs.filter((r) => r.tradingVolume > 0).length, volume: refVolume }, ym),
       };
     });
     return { id: c.id, username: c.username, displayName: c.displayName, profileImage: c.profileImage, months };
