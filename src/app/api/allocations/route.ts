@@ -47,7 +47,8 @@ function getPayoutMonths(): string[] {
   return getAllMonths().filter((ym) => ym >= "2026-03");
 }
 
-function computeScore(stats: {
+// March and earlier: impressions > trendle posts > engagement
+function computeScoreMarch(stats: {
   impressions: number;
   engagement: number;
   mentions: number;
@@ -63,6 +64,42 @@ function computeScore(stats: {
     stats.referrals * 100 +
     stats.volume * 3
   );
+}
+
+// April onward: 80% weight on referrals + impressions
+function computeScoreApril(stats: {
+  impressions: number;
+  engagement: number;
+  mentions: number;
+  interactions: number;
+  referrals: number;
+  volume: number;
+}) {
+  // Referrals & impressions = 80% of score weight
+  const referralScore = stats.referrals * 500 + stats.volume * 20;
+  const impressionScore = stats.impressions * 50;
+  // Everything else = 20%
+  const otherScore =
+    stats.mentions * 200 +
+    stats.engagement * 2 +
+    stats.interactions * 50;
+  return referralScore + impressionScore + otherScore;
+}
+
+function computeScore(
+  stats: {
+    impressions: number;
+    engagement: number;
+    mentions: number;
+    interactions: number;
+    referrals: number;
+    volume: number;
+  },
+  yearMonth: string
+) {
+  return yearMonth >= "2026-04"
+    ? computeScoreApril(stats)
+    : computeScoreMarch(stats);
 }
 
 interface CreatorData {
@@ -106,7 +143,7 @@ function computeMonthAllocation(
       interactions: ints.length,
       referrals: refs.length,
       volume: referralVolume,
-    });
+    }, yearMonth);
 
     const eligible = !isExcluded && score > 0;
 
@@ -184,7 +221,7 @@ export async function GET(req: NextRequest) {
       month: ym, label: getMonthLabel(ym),
       impressions, engagement, mentions, interactions, referrals,
       volume: Math.round(volume * 100) / 100,
-      score: computeScore({ impressions, engagement, mentions, interactions, referrals, volume }),
+      score: computeScore({ impressions, engagement, mentions, interactions, referrals, volume }, ym),
     };
   });
 
@@ -202,7 +239,7 @@ export async function GET(req: NextRequest) {
         month: ym, label: getMonthLabel(ym), impressions, engagement,
         mentions: tweets.length, interactions: ints.length,
         referrals: refs.length, volume: Math.round(refVolume * 100) / 100,
-        score: computeScore({ impressions, engagement, mentions: tweets.length, interactions: ints.length, referrals: refs.length, volume: refVolume }),
+        score: computeScore({ impressions, engagement, mentions: tweets.length, interactions: ints.length, referrals: refs.length, volume: refVolume }, ym),
       };
     });
     return { id: c.id, username: c.username, displayName: c.displayName, profileImage: c.profileImage, months };
