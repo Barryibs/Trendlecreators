@@ -233,6 +233,33 @@ export async function GET(req: NextRequest) {
   const totalAllocated = currentAllocations.reduce((s, a) => s + a.payout, 0);
   const eligible = currentAllocations.filter((a) => a.payout > 0);
 
+  // Referral trends by month (signups and volume over time)
+  const allReferrals = creators.flatMap((c) =>
+    c.referrals.map((r) => ({ ...r, creatorUsername: c.username }))
+  );
+  const referralTrends = allMonths.map((ym) => {
+    const { start, end } = getMonthRange(ym);
+    const monthRefs = allReferrals.filter(
+      (r) => r.createdAt >= start && r.createdAt < end
+    );
+    const volume = monthRefs.reduce((s, r) => s + r.tradingVolume, 0);
+    // Per-creator breakdown
+    const byCreator: Record<string, { count: number; volume: number }> = {};
+    for (const r of monthRefs) {
+      if (!byCreator[r.creatorUsername]) byCreator[r.creatorUsername] = { count: 0, volume: 0 };
+      byCreator[r.creatorUsername].count++;
+      byCreator[r.creatorUsername].volume += r.tradingVolume;
+    }
+    return {
+      month: ym,
+      label: getMonthLabel(ym),
+      signups: monthRefs.length,
+      volume: Math.round(volume * 100) / 100,
+      activeReferrals: monthRefs.filter((r) => r.tradingVolume > 0).length,
+      byCreator,
+    };
+  });
+
   return NextResponse.json({
     allocations: currentAllocations,
     period: getMonthLabel(latestPayoutMonth),
@@ -243,5 +270,6 @@ export async function GET(req: NextRequest) {
     monthlyTotals,
     creatorMonthly: creatorMonthly.filter((c) => c.months.some((m) => m.score > 0)),
     monthlyPayouts,
+    referralTrends: referralTrends.filter((r) => r.signups > 0),
   });
 }

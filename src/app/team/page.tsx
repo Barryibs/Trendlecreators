@@ -72,6 +72,14 @@ interface AllocationsData {
   monthlyTotals: MonthlyTotal[];
   creatorMonthly: CreatorMonthly[];
   monthlyPayouts: MonthlyPayout[];
+  referralTrends: {
+    month: string;
+    label: string;
+    signups: number;
+    volume: number;
+    activeReferrals: number;
+    byCreator: Record<string, { count: number; volume: number }>;
+  }[];
 }
 
 function formatNum(n: number): string {
@@ -276,6 +284,84 @@ export default function TeamPage() {
           </tbody>
         </table>
       </div>
+
+      {/* ===== SECTION: Referral Trends ===== */}
+      {data.referralTrends.length > 0 && (
+        <>
+          <h3 className="text-lg font-semibold mb-4">Referral Trends</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Signups chart */}
+            <div className="bg-card rounded-xl border border-border p-5">
+              <h4 className="text-sm font-semibold mb-4">Referral Signups by Month</h4>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={data.referralTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} tickFormatter={(v) => v.split(" ")[0]} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="signups" name="Total Signups" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="activeReferrals" name="Active (traded)" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Volume chart */}
+            <div className="bg-card rounded-xl border border-border p-5">
+              <h4 className="text-sm font-semibold mb-4">Referred Volume by Month</h4>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={data.referralTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} tickFormatter={(v) => v.split(" ")[0]} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${formatNum(v)}`} />
+                  <Tooltip formatter={(v) => `$${Number(v).toLocaleString()}`} />
+                  <Bar dataKey="volume" name="Volume" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Referral trends table */}
+          <div className="bg-card rounded-xl border border-border overflow-hidden mb-10">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="text-left px-4 py-3 font-semibold">Month</th>
+                  <th className="text-right px-4 py-3 font-semibold">Signups</th>
+                  <th className="text-right px-4 py-3 font-semibold">Active</th>
+                  <th className="text-right px-4 py-3 font-semibold">Volume</th>
+                  <th className="text-left px-4 py-3 font-semibold">Top Referrer</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.referralTrends.map((rt) => {
+                  const topReferrer = Object.entries(rt.byCreator).sort((a, b) => b[1].count - a[1].count)[0];
+                  return (
+                    <tr key={rt.month} className="border-b border-border last:border-0">
+                      <td className="px-4 py-3 font-medium">{rt.label}</td>
+                      <td className="px-4 py-3 text-right">{rt.signups}</td>
+                      <td className="px-4 py-3 text-right">{rt.activeReferrals}</td>
+                      <td className="px-4 py-3 text-right">${formatNum(rt.volume)}</td>
+                      <td className="px-4 py-3">
+                        {topReferrer ? `@${topReferrer[0]} (${topReferrer[1].count})` : "-"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/50 font-semibold">
+                  <td className="px-4 py-3">Total</td>
+                  <td className="px-4 py-3 text-right">{data.referralTrends.reduce((s, r) => s + r.signups, 0)}</td>
+                  <td className="px-4 py-3 text-right">{data.referralTrends.reduce((s, r) => s + r.activeReferrals, 0)}</td>
+                  <td className="px-4 py-3 text-right">${formatNum(data.referralTrends.reduce((s, r) => s + r.volume, 0))}</td>
+                  <td className="px-4 py-3">-</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </>
+      )}
 
       {/* ===== SECTION 2: Per-Creator Monthly Breakdown ===== */}
       <h3 className="text-lg font-semibold mb-4">Creator Performance by Month</h3>
