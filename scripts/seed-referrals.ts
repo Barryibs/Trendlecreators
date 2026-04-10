@@ -55,6 +55,8 @@ async function main() {
       continue;
     }
 
+    const registeredAt = new Date(row.invitedRegisteredAt);
+
     await prisma.referral.upsert({
       where: {
         creatorId_walletAddress: {
@@ -66,6 +68,7 @@ async function main() {
         tradingVolume: row.volume,
         tradingFees: row.fees,
         totalTrades: row.tradesCount,
+        createdAt: registeredAt,
       },
       create: {
         creatorId: creator.id,
@@ -73,6 +76,7 @@ async function main() {
         tradingVolume: row.volume,
         tradingFees: row.fees,
         totalTrades: row.tradesCount,
+        createdAt: registeredAt,
       },
     });
     matched++;
