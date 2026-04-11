@@ -25,7 +25,7 @@ const TIME_OPTIONS = [
   { label: "30 Days", days: 30 },
 ];
 
-const LEVERAGE_OPTIONS = [1, 2, 3, 4, 5];
+const LEVERAGE_OPTIONS = [1, 2, 3, 4, 5, 10];
 
 const AMOUNT_PRESETS = [10, 25, 50, 100, 250, 500];
 
@@ -421,7 +421,7 @@ export default function CalculatorPage() {
                 }}
               >
                 <div style={{ color: "#71717a", fontSize: "11px", marginBottom: "4px" }}>
-                  Entry Level
+                  Entry (Day Low)
                 </div>
                 <div style={{ color: "#fff", fontSize: "20px", fontWeight: 700 }}>
                   {priceData.entryPrice.toFixed(2)}
@@ -441,7 +441,7 @@ export default function CalculatorPage() {
                 }}
               >
                 <div style={{ color: "#71717a", fontSize: "11px", marginBottom: "4px" }}>
-                  Current Level
+                  Exit (Day High)
                 </div>
                 <div style={{ color: "#fff", fontSize: "20px", fontWeight: 700 }}>
                   {priceData.currentPrice.toFixed(2)}

@@ -42,36 +42,54 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Market not found" }, { status: 404 });
     }
 
-    // Fetch current price and historical price
-    const skip = daysBack * 24 * 60; // 1-minute intervals
+    // Fetch a full day of prices (1440 minutes) for both entry day and current day
+    // to find the lowest entry price and highest current price (max profit scenario)
+    const dayMinutes = 24 * 60;
+    const entrySkip = daysBack * dayMinutes;
 
-    const [currentRes, historicalRes] = await Promise.all([
+    const [currentDayRes, entryDayRes] = await Promise.all([
       fetch(
-        `https://api.trendle.fi/trendle/markets/${market.id}/prices?version=v1&limit=1`
+        `https://api.trendle.fi/trendle/markets/${market.id}/prices?version=v1&limit=${dayMinutes}`
       ),
       fetch(
-        `https://api.trendle.fi/trendle/markets/${market.id}/prices?version=v1&limit=1&skip=${skip}`
+        `https://api.trendle.fi/trendle/markets/${market.id}/prices?version=v1&limit=${dayMinutes}&skip=${entrySkip}`
       ),
     ]);
 
-    if (!currentRes.ok || !historicalRes.ok) {
+    if (!currentDayRes.ok || !entryDayRes.ok) {
       throw new Error("Failed to fetch prices");
     }
 
-    const currentData = await currentRes.json();
-    const historicalData = await historicalRes.json();
+    const currentDayData: { value: string; timestamp: string }[] = await currentDayRes.json();
+    const entryDayData: { value: string; timestamp: string }[] = await entryDayRes.json();
 
-    if (!currentData.length || !historicalData.length) {
+    if (!currentDayData.length || !entryDayData.length) {
       return NextResponse.json(
         { error: "No price data available" },
         { status: 404 }
       );
     }
 
-    const currentPrice = parseFloat(currentData[0].value);
-    const entryPrice = parseFloat(historicalData[0].value);
-    const entryTime = historicalData[0].timestamp;
-    const currentTime = currentData[0].timestamp;
+    // Find lowest price on entry day and highest price on current day
+    let entryPrice = Infinity;
+    let entryTime = entryDayData[0].timestamp;
+    for (const p of entryDayData) {
+      const val = parseFloat(p.value);
+      if (val < entryPrice) {
+        entryPrice = val;
+        entryTime = p.timestamp;
+      }
+    }
+
+    let currentPrice = -Infinity;
+    let currentTime = currentDayData[0].timestamp;
+    for (const p of currentDayData) {
+      const val = parseFloat(p.value);
+      if (val > currentPrice) {
+        currentPrice = val;
+        currentTime = p.timestamp;
+      }
+    }
 
     return NextResponse.json({
       market: {
