@@ -101,14 +101,46 @@ export default function CalculatorPage() {
       })()
     : null;
 
-  const handleDownload = async () => {
-    if (!resultRef.current) return;
+  const captureCard = async () => {
+    if (!resultRef.current) return null;
     const html2canvas = (await import("html2canvas-pro")).default;
-    const canvas = await html2canvas(resultRef.current, {
-      backgroundColor: null,
-      scale: 2,
+    const el = resultRef.current;
+    // Temporarily remove border-radius to avoid white corner artifacts
+    const origRadius = el.style.borderRadius;
+    el.style.borderRadius = "0px";
+    const canvas = await html2canvas(el, {
+      backgroundColor: "#09090b",
+      scale: 4,
       useCORS: true,
     });
+    el.style.borderRadius = origRadius;
+    // Draw rounded corners by clipping
+    const radius = 20 * 4; // match scale
+    const w = canvas.width;
+    const h = canvas.height;
+    const outCanvas = document.createElement("canvas");
+    outCanvas.width = w;
+    outCanvas.height = h;
+    const ctx = outCanvas.getContext("2d")!;
+    ctx.beginPath();
+    ctx.moveTo(radius, 0);
+    ctx.lineTo(w - radius, 0);
+    ctx.quadraticCurveTo(w, 0, w, radius);
+    ctx.lineTo(w, h - radius);
+    ctx.quadraticCurveTo(w, h, w - radius, h);
+    ctx.lineTo(radius, h);
+    ctx.quadraticCurveTo(0, h, 0, h - radius);
+    ctx.lineTo(0, radius);
+    ctx.quadraticCurveTo(0, 0, radius, 0);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(canvas, 0, 0);
+    return outCanvas;
+  };
+
+  const handleDownload = async () => {
+    const canvas = await captureCard();
+    if (!canvas) return;
     const link = document.createElement("a");
     link.download = `trendle-pnl-${selectedSlug}.png`;
     link.href = canvas.toDataURL("image/png");
@@ -116,13 +148,8 @@ export default function CalculatorPage() {
   };
 
   const handleCopyImage = async () => {
-    if (!resultRef.current) return;
-    const html2canvas = (await import("html2canvas-pro")).default;
-    const canvas = await html2canvas(resultRef.current, {
-      backgroundColor: null,
-      scale: 2,
-      useCORS: true,
-    });
+    const canvas = await captureCard();
+    if (!canvas) return;
     canvas.toBlob(async (blob) => {
       if (!blob) return;
       try {
