@@ -109,7 +109,7 @@ export default function CalculatorPage() {
     const origRadius = el.style.borderRadius;
     el.style.borderRadius = "0px";
     const canvas = await html2canvas(el, {
-      backgroundColor: "#09090b",
+      backgroundColor: "#1a1a1a",
       scale: 4,
       useCORS: true,
     });
@@ -357,161 +357,103 @@ export default function CalculatorPage() {
           <div
             ref={resultRef}
             style={{
-              background: "linear-gradient(160deg, #0b1a2e 0%, #0f2030 30%, #0a1520 100%)",
+              background: "#1a1a1a",
               borderRadius: "20px",
-              padding: "32px",
+              padding: "28px 28px 20px",
               maxWidth: "480px",
               fontFamily: "system-ui, -apple-system, sans-serif",
               overflow: "hidden",
               position: "relative",
             }}
           >
-            {/* Top row: badges + logo */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "28px" }}>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                <span style={{
-                  background: "#1e293b",
-                  border: "1px solid #334155",
-                  color: "#fff",
-                  fontSize: "14px",
-                  fontWeight: 700,
-                  padding: "6px 14px",
-                  borderRadius: "6px",
-                }}>
-                  {priceData.market.title}
-                </span>
-                <span style={{
-                  background: direction === "long" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
-                  border: direction === "long" ? "1px solid rgba(34,197,94,0.3)" : "1px solid rgba(239,68,68,0.3)",
-                  color: direction === "long" ? "#22c55e" : "#ef4444",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                }}>
-                  {leverage}x
-                </span>
-                <span style={{
-                  background: direction === "long" ? "#22c55e" : "#ef4444",
-                  color: "#fff",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                }}>
-                  {direction === "long" ? "LONG" : "SHORT"}
-                </span>
+            {/* Top label */}
+            <div style={{ color: "#fff", fontSize: "12px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "20px" }}>
+              What would you have made?
+            </div>
+
+            {/* Market title */}
+            <div style={{ color: "#fff", fontSize: "20px", fontWeight: 700, marginBottom: "6px" }}>
+              {priceData.market.title}
+            </div>
+
+            {/* Direction + leverage tag */}
+            <div style={{ marginBottom: "16px" }}>
+              <span style={{
+                color: direction === "long" ? "#22c55e" : "#ef4444",
+                fontSize: "13px",
+                fontWeight: 600,
+              }}>
+                {direction === "long" ? "Buy" : "Sell"} | {leverage}X
+              </span>
+            </div>
+
+            {/* Large PnL dollar amount */}
+            <div style={{
+              color: pnl.isLiquidated ? "#ef4444" : pnl.isProfit ? "#22c55e" : "#ef4444",
+              fontSize: "42px",
+              fontWeight: 800,
+              lineHeight: 1,
+              marginBottom: "4px",
+            }}>
+              {pnl.isLiquidated
+                ? "LIQUIDATED"
+                : `${pnl.isProfit ? "+" : "-"}$${Math.abs(pnl.profit).toFixed(2)}`}
+            </div>
+
+            {/* Smaller PnL percentage */}
+            <div style={{
+              color: pnl.isLiquidated ? "#f87171" : pnl.isProfit ? "#22c55e" : "#ef4444",
+              fontSize: "16px",
+              fontWeight: 600,
+              marginBottom: "20px",
+            }}>
+              {pnl.isLiquidated
+                ? "-100.00%"
+                : `${pnl.returnPct >= 0 ? "+" : ""}${pnl.returnPct.toFixed(2)}%`}
+            </div>
+
+            {/* Bottom info row */}
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "16px",
+              marginBottom: "12px",
+            }}>
+              <div>
+                <div style={{ color: "#666", fontSize: "11px", marginBottom: "4px" }}>Entry Price</div>
+                <div style={{ color: "#fff", fontSize: "14px", fontWeight: 600 }}>
+                  {priceData.entryPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
               </div>
+              <div>
+                <div style={{ color: "#666", fontSize: "11px", marginBottom: "4px" }}>Current Price</div>
+                <div style={{ color: "#fff", fontSize: "14px", fontWeight: 600 }}>
+                  {priceData.currentPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div>
+                <div style={{ color: "#666", fontSize: "11px", marginBottom: "4px" }}>Return ({timeLabel})</div>
+                <div style={{
+                  color: pnl.isLiquidated ? "#ef4444" : pnl.isProfit ? "#22c55e" : "#ef4444",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                }}>
+                  {pnl.isLiquidated
+                    ? "-100.00%"
+                    : `${pnl.returnPct >= 0 ? "+" : ""}${pnl.returnPct.toFixed(2)}%`}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/trendle-logo.png"
                 alt="Trendle"
-                style={{ width: "48px", height: "48px", borderRadius: "10px" }}
+                style={{ width: "24px", height: "24px", borderRadius: "5px" }}
               />
-            </div>
-
-            {/* PnL display — large centered percentage in bordered box */}
-            <div style={{
-              border: `2px solid ${pnl.isLiquidated ? "#ef4444" : pnl.isProfit ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}`,
-              borderRadius: "16px",
-              padding: "28px 20px",
-              textAlign: "center",
-              marginBottom: "24px",
-            }}>
-              {pnl.isLiquidated ? (
-                <>
-                  <div style={{ color: "#ef4444", fontSize: "56px", fontWeight: 800, lineHeight: 1 }}>
-                    LIQUIDATED
-                  </div>
-                  <div style={{ color: "#f87171", fontSize: "18px", marginTop: "10px", fontWeight: 600 }}>
-                    -${amount.toFixed(2)} (-100%)
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{
-                    color: pnl.isProfit ? "#2dd4bf" : "#ef4444",
-                    fontSize: "56px",
-                    fontWeight: 800,
-                    lineHeight: 1,
-                  }}>
-                    {pnl.returnPct >= 0 ? "+" : ""}{pnl.returnPct.toFixed(3)}%
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Price details rows */}
-            <div style={{
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "12px",
-              padding: "18px 20px",
-              marginBottom: "24px",
-            }}>
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "12px",
-              }}>
-                <span style={{ color: "#94a3b8", fontSize: "16px", fontWeight: 500 }}>
-                  Entry Price:
-                </span>
-                <span style={{ color: "#fff", fontSize: "16px", fontWeight: 700 }}>
-                  {priceData.entryPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "12px",
-              }}>
-                <span style={{ color: "#94a3b8", fontSize: "16px", fontWeight: 500 }}>
-                  Current Price:
-                </span>
-                <span style={{ color: "#fff", fontSize: "16px", fontWeight: 700 }}>
-                  {priceData.currentPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}>
-                <span style={{ color: "#94a3b8", fontSize: "16px", fontWeight: 500 }}>
-                  PnL ({timeLabel}):
-                </span>
-                <span style={{
-                  color: pnl.isLiquidated ? "#ef4444" : pnl.isProfit ? "#22c55e" : "#ef4444",
-                  fontSize: "16px",
-                  fontWeight: 700,
-                }}>
-                  {pnl.isLiquidated
-                    ? `-$${amount.toFixed(2)}`
-                    : `${pnl.isProfit ? "+" : "-"}$${Math.abs(pnl.profit).toFixed(2)}`}
-                </span>
-              </div>
-            </div>
-
-            {/* Footer: Trendle branding */}
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/trendle-logo.png"
-                  alt="Trendle"
-                  style={{ width: "32px", height: "32px", borderRadius: "8px" }}
-                />
-                <span style={{ color: "#94a3b8", fontSize: "16px", fontWeight: 600 }}>
-                  TRENDLE
-                </span>
-              </div>
-              <span style={{ color: "#64748b", fontSize: "14px" }}>
+              <span style={{ color: "#fff", fontSize: "13px" }}>
                 trendle.fi/{priceData.market.slug}
               </span>
             </div>
